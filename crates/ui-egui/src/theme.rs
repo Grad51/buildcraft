@@ -11,6 +11,9 @@ pub enum ThemeKind {
     #[default]
     Light,
     Dark,
+    /// Dense slate chrome for drawing review and takeoff: a mid-gray pasteboard so white
+    /// sheets stand out, squarer controls and a bright blue accent.
+    Estimator,
 }
 
 /// The saved user choice, independent of the light/dark colours currently displayed.
@@ -20,6 +23,7 @@ pub enum ThemePreference {
     #[default]
     Light,
     Dark,
+    Estimator,
 }
 
 impl ThemePreference {
@@ -29,6 +33,7 @@ impl ThemePreference {
         match self {
             Self::Light => ThemeKind::Light,
             Self::Dark => ThemeKind::Dark,
+            Self::Estimator => ThemeKind::Estimator,
             Self::System => match system {
                 Some(true) => ThemeKind::Dark,
                 Some(false) => ThemeKind::Light,
@@ -118,6 +123,30 @@ impl Tokens {
                 page_shadow: Color32::from_black_alpha(120),
                 radius: 6,
             },
+            ThemeKind::Estimator => Self {
+                kind,
+                titlebar: Color32::from_rgb(0x1F, 0x23, 0x29),
+                chrome: Color32::from_rgb(0x2B, 0x30, 0x38),
+                panel: Color32::from_rgb(0x2B, 0x30, 0x38),
+                pasteboard: Color32::from_rgb(0x3A, 0x3F, 0x47),
+                card: Color32::from_rgb(0x34, 0x3A, 0x43),
+                border: Color32::from_rgb(0x48, 0x4F, 0x5A),
+                divider: Color32::from_rgb(0x3B, 0x41, 0x4A),
+                text: Color32::from_rgb(0xE8, 0xEA, 0xED),
+                text_muted: Color32::from_rgb(0xB9, 0xBF, 0xC8),
+                text_faint: Color32::from_rgb(0xA3, 0xAA, 0xB4),
+                icon: Color32::from_rgb(0xD0, 0xD5, 0xDC),
+                hover: Color32::from_rgb(0x3A, 0x41, 0x4B),
+                pressed: Color32::from_rgb(0x44, 0x4C, 0x57),
+                selected: Color32::from_rgb(0x1E, 0x4A, 0x6E),
+                accent: Color32::from_rgb(0x2F, 0x8F, 0xE0),
+                accent_text: Color32::from_rgb(0x7D, 0xBB, 0xF2),
+                accent_soft: Color32::from_rgb(0x1F, 0x3A, 0x55),
+                field: Color32::from_rgb(0x22, 0x26, 0x2C),
+                badge_new: Color32::from_rgb(0x2F, 0x8F, 0xE0),
+                page_shadow: Color32::from_black_alpha(140),
+                radius: 3,
+            },
         }
     }
 
@@ -126,7 +155,7 @@ impl Tokens {
     }
 
     pub fn dark(&self) -> bool {
-        self.kind == ThemeKind::Dark
+        matches!(self.kind, ThemeKind::Dark | ThemeKind::Estimator)
     }
 }
 
@@ -751,7 +780,7 @@ mod tests {
     #[test]
     fn text_is_readable_on_every_surface() {
         // #76: the faintest text (hints, zoom level, captions) was 3.3:1 in the light theme.
-        for kind in [ThemeKind::Light, ThemeKind::Dark] {
+        for kind in [ThemeKind::Light, ThemeKind::Dark, ThemeKind::Estimator] {
             let t = Tokens::for_kind(kind);
             for (name, fg) in [("text", t.text), ("text_muted", t.text_muted), ("text_faint", t.text_faint)] {
                 for bg in [t.chrome, t.panel, t.card, t.pasteboard] {

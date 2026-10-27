@@ -2464,7 +2464,8 @@ impl PdfCraftApp {
                     "system" => ThemePreference::System,
                     "light" => ThemePreference::Light,
                     "dark" => ThemePreference::Dark,
-                    _ => return Err("theme must be light, dark, or system".into()),
+                    "estimator" => ThemePreference::Estimator,
+                    _ => return Err("theme must be light, dark, estimator, or system".into()),
                 };
                 self.set_theme_preference(preference);
             }
