@@ -111,8 +111,8 @@ fn remote_document_paths_to_other_computers_and_devices_are_refused() {
 }
 
 #[test]
-fn urls_follow_the_artcraft_scheme() {
-    assert_eq!(super::APP_PAGE, format!("{}/apps/{}", super::WEBSITE, super::APP));
+fn urls_point_at_buildcraft_and_its_upstream() {
+    assert_eq!(super::WEBSITE, format!("{}/issues", super::APP_PAGE));
     assert_eq!(super::GITHUB, format!("https://github.com/storytold/{}", super::APP));
     for l in super::LINKS {
         assert!(l.url.starts_with("https://"), "{}", l.url);

@@ -94,7 +94,7 @@ pdfcraft-cli run    --script steps.json [--root DIR] [--report]
     "\
 pdfcraft-cli ui     --control FILE <method> [key=value …] [--out shot.png]
                                                            drive a running app started with --control FILE
-help and feedback: https://discord.gg/artcraft"
+help and feedback: https://github.com/Grad51/buildcraft/issues"
 );
 
 fn main() -> ExitCode {

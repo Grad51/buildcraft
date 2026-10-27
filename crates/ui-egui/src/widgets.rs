@@ -555,24 +555,35 @@ pub fn progress_notice(app: &PdfCraftApp, ctx: &egui::Context) -> bool {
     cancel
 }
 
-/// The ArtCraft wordmark (Storyteller's brand, docs/brand/; not open source), sized to `height`.
-pub fn artcraft_logo(ui: &mut egui::Ui, height: f32) -> Response {
-    let dark = ui.visuals().dark_mode;
-    let (uri, bytes): (&str, &'static [u8]) = if dark {
-        ("bytes://artcraft-logo-white.svg", include_bytes!("../../../docs/brand/artcraft-logo-white.svg"))
-    } else {
-        ("bytes://artcraft-logo.svg", include_bytes!("../../../docs/brand/artcraft-logo.svg"))
-    };
-    ui.add(egui::Image::from_bytes(uri, bytes).max_height(height).alt_text("ArtCraft"))
+/// BuildCraft's tiger mark (the 128 px app icon), `size` points square. Replaces PdfCraft's
+/// ArtCraft mark, which forks must not ship (docs/brand/LICENSE-brand.txt upstream).
+pub fn brand_mark(ui: &mut egui::Ui, size: f32) -> Response {
+    match brand_texture(ui.ctx()) {
+        Some(texture) => ui.add(
+            egui::Image::new(egui::load::SizedTexture::from_handle(&texture)).fit_to_exact_size(vec2(size, size)).alt_text("BuildCraft"),
+        ),
+        None => ui.label("BuildCraft"),
+    }
 }
 
-/// The ArtCraft mark (brand blue, works on light and dark), `size` points square.
-pub fn artcraft_mark(ui: &mut egui::Ui, size: f32) -> Response {
-    ui.add(
-        egui::Image::from_bytes("bytes://artcraft-mark.svg", include_bytes!("../../../docs/brand/artcraft-mark.svg"))
-            .fit_to_exact_size(vec2(size, size))
-            .alt_text("ArtCraft"),
-    )
+/// The tiger icon decoded once per context and kept as a texture.
+fn brand_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
+    let id = egui::Id::new("buildcraft-brand-mark");
+    if let Some(texture) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
+        return Some(texture);
+    }
+    let bytes: &[u8] = include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.pdfcraft.png");
+    let mut reader = png::Decoder::new(std::io::Cursor::new(bytes)).read_info().ok()?;
+    let mut buf = vec![0; reader.output_buffer_size()?];
+    let info = reader.next_frame(&mut buf).ok()?;
+    if info.color_type != png::ColorType::Rgba || info.bit_depth != png::BitDepth::Eight {
+        return None;
+    }
+    let size = [info.width as usize, info.height as usize];
+    let image = egui::ColorImage::from_rgba_unmultiplied(size, &buf[..info.buffer_size()]);
+    let texture = ctx.load_texture("buildcraft-brand-mark", image, egui::TextureOptions::LINEAR);
+    ctx.data_mut(|d| d.insert_temp(id, texture.clone()));
+    Some(texture)
 }
 
 /// Buttons for every community link (`pdfcraft_engine::links`), Discord first and prominent.
@@ -582,7 +593,7 @@ pub fn community_links(ui: &mut egui::Ui) -> Option<&'static str> {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing = vec2(8.0, 8.0);
         for (i, l) in pdfcraft_engine::links::LINKS.iter().enumerate() {
-            let resp = if i == 0 { icon_pill(ui, l.icon, tl!("Join our Discord"), true) } else { icon_pill(ui, l.icon, tl!(l.label), false) };
+            let resp = icon_pill(ui, l.icon, tl!(l.label), i == 0);
             if resp.on_hover_text(l.url).clicked() {
                 clicked = Some(l.command);
             }

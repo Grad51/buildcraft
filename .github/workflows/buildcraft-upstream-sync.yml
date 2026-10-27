@@ -1,0 +1,105 @@
+# BuildCraft: once a week, merge PdfCraft's main into a sync branch, build and test it on Windows,
+# and open a pull request. If the merge conflicts, open an issue listing the files instead.
+# See PATCHES.md for how each conflicting file should be resolved.
+name: Upstream sync
+
+on:
+  schedule:
+    - cron: "17 9 * * 1" # Mondays, 09:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: github.repository == 'Grad51/buildcraft'
+    runs-on: ubuntu-latest
+    outputs:
+      status: ${{ steps.merge.outputs.status }}
+      branch: ${{ steps.merge.outputs.branch }}
+      upstream: ${{ steps.merge.outputs.upstream }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - id: merge
+        name: Merge upstream main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/storytold/pdfcraft.git
+          git fetch --no-tags upstream main
+          echo "upstream=$(git rev-parse --short upstream/main)" >> "$GITHUB_OUTPUT"
+          if git merge-base --is-ancestor upstream/main HEAD; then
+            echo "status=current" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          branch="sync/upstream-$(date -u +%Y-%m-%d)"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          git checkout -b "$branch"
+          if git merge --no-edit -m "Merge PdfCraft upstream $(git rev-parse --short upstream/main)" upstream/main; then
+            git push --force origin "$branch"
+            echo "status=merged" >> "$GITHUB_OUTPUT"
+          else
+            files=$(git diff --name-only --diff-filter=U)
+            git merge --abort
+            echo "status=conflict" >> "$GITHUB_OUTPUT"
+            {
+              echo "The weekly merge of PdfCraft \`main\` ($(git rev-parse --short upstream/main)) conflicts in:"
+              echo
+              for f in $files; do echo "- \`$f\`"; done
+              echo
+              echo "Merge by hand and resolve each file using PATCHES.md:"
+              echo
+              echo '```'
+              echo "git fetch upstream && git checkout -b $branch main && git merge upstream/main"
+              echo '```'
+            } > body.md
+            gh issue create --title "Upstream sync conflict ($(date -u +%Y-%m-%d))" --body-file body.md
+          fi
+
+  test:
+    needs: merge
+    if: needs.merge.outputs.status == 'merged'
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.merge.outputs.branch }}
+      - name: Build
+        run: cargo build --locked -p pdfcraft
+      - name: Test engine and UI
+        run: cargo test --locked -p pdfcraft-engine -p pdfcraft-ui-egui
+
+  pull-request:
+    needs: [merge, test]
+    if: always() && needs.merge.outputs.status == 'merged'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open the pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.merge.outputs.branch }}
+          UPSTREAM: ${{ needs.merge.outputs.upstream }}
+          RESULT: ${{ needs.test.result }}
+        run: |
+          if [ "$RESULT" = "success" ]; then state="Windows build and tests passed."; else state="Windows build or tests FAILED ($RESULT): check the run before merging."; fi
+          body="Merges PdfCraft \`main\` ($UPSTREAM) into BuildCraft. $state
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if gh pr view "$BRANCH" >/dev/null 2>&1; then
+            gh pr comment "$BRANCH" --body "$body"
+          else
+            gh pr create --base main --head "$BRANCH" --title "Upstream sync: PdfCraft $UPSTREAM" --body "$body"
+          fi

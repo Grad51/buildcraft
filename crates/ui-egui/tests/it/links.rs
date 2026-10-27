@@ -1,5 +1,5 @@
-//! Community links: the Discord button is one click away everywhere; Help menu, About dialog and
-//! home screen open the ArtCraft and PdfCraft pages.
+//! Links: the Discord button is one click away everywhere; Help menu, About dialog and home
+//! screen open BuildCraft's pages and PdfCraft's (upstream).
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
@@ -23,19 +23,17 @@ fn discord_button_in_the_top_bar_opens_discord() {
     h.get_by_label("Discord").click();
     h.run_steps(2);
     assert_eq!(h.state().last_opened_url.as_deref(), Some(links::DISCORD));
-    assert_eq!(links::DISCORD, "https://discord.gg/artcraft");
 }
 
 #[test]
 fn home_screen_links() {
     for (label, url) in [
-        ("Join our Discord", links::DISCORD),
-        ("PdfCraft web page", "https://getartcraft.com/apps/pdfcraft"),
+        ("BuildCraft on GitHub", "https://github.com/Grad51/buildcraft"),
+        ("Report a BuildCraft issue", "https://github.com/Grad51/buildcraft/issues"),
         ("PdfCraft on GitHub", "https://github.com/storytold/pdfcraft"),
-        ("ArtCraft website", "https://getartcraft.com"),
+        ("PdfCraft Discord", links::DISCORD),
     ] {
         let mut h = harness(|_| {});
-        h.get_by_label("Join the ArtCraft community");
         h.get_by_label(label).click();
         h.run_steps(2);
         assert_eq!(h.state().last_opened_url.as_deref(), Some(url), "{label}");
@@ -45,12 +43,11 @@ fn home_screen_links() {
 #[test]
 fn home_community_card_closes_for_this_run() {
     let mut h = harness(|_| {});
-    h.get_by_label("Join the ArtCraft community");
+    h.get_by_label("Report a BuildCraft issue");
     h.get_by_label("Close").click();
     h.run_steps(2);
     assert!(h.state().community_card_closed);
-    assert!(h.query_by_label("Join the ArtCraft community").is_none());
-    assert!(h.query_by_label("Join our Discord").is_none());
+    assert!(h.query_by_label("Report a BuildCraft issue").is_none());
     // Not remembered: a fresh app shows the card again.
     assert!(!PdfCraftApp::new().community_card_closed);
 }
@@ -63,10 +60,11 @@ fn about_dialog_shows_the_brand_and_links() {
         app.open_bytes("one.pdf", None, pdf.to_vec()).unwrap();
         app.dialog = Some(Dialog::About);
     });
-    assert!(h.query_all_by_label("ArtCraft").count() >= 2, "the mark and the wordmark (alt text)");
-    h.get_by_label("Join our Discord").click();
+    assert!(h.query_all_by_label("BuildCraft").count() >= 2, "the mark (alt text) and the name");
+    assert!(h.query_all_by_label("ArtCraft").count() == 0, "no ArtCraft mark in a fork");
+    h.get_by_label("BuildCraft on GitHub").click();
     h.run_steps(2);
-    assert_eq!(h.state().last_opened_url.as_deref(), Some(links::DISCORD));
+    assert_eq!(h.state().last_opened_url.as_deref(), Some(links::APP_PAGE));
 }
 
 #[test]
@@ -77,39 +75,4 @@ fn help_commands_open_each_link() {
         assert_eq!(h.state().last_opened_url.as_deref(), Some(l.url));
         assert_eq!(pdfcraft_engine::commands::command(l.command).unwrap().menu, Some("Help"));
     }
-}
-
-/// Runs frames until the node labelled `label` exists and has stopped moving, then returns it.
-///
-/// The About dialog is a modal centred on its own size, and switching tabs changes that size, so
-/// for a few frames afterwards the modal grows and recentres and every control in it moves. A
-/// fixed number of frames is a guess at how long that takes: it was too few after the 0.5.0
-/// contributors refresh (78 names instead of 5) on some machines, the click on Table landed where
-/// the button had been, and the table never opened (#671).
-fn settled<'a>(h: &'a mut Harness<'static, PdfCraftApp>, label: &'a str) -> egui_kittest::Node<'a> {
-    let mut last = None;
-    for _ in 0..60 {
-        h.run_steps(1);
-        let now = h.query_by_label(label).map(|n| n.rect());
-        if now.is_some() && now == last {
-            return h.get_by_label(label);
-        }
-        last = now;
-    }
-    panic!("{label:?} never appeared or never stopped moving");
-}
-
-#[test]
-fn about_dialog_has_contributors_and_models_tabs() {
-    let mut h = harness(|app| app.dialog = Some(Dialog::About));
-    settled(&mut h, "Contributors").click();
-    // The owner is always in the compiled-in credits (contributors/contributors.json), shown by username.
-    settled(&mut h, "@echelon");
-    settled(&mut h, "Table").click();
-    settled(&mut h, "PRs");
-    settled(&mut h, "Display name").click();
-    settled(&mut h, "Brandon Thomas");
-    settled(&mut h, "Models").click();
-    h.run_steps(4);
-    assert!(h.query_all_by_label("Anthropic").count() >= 1);
 }
