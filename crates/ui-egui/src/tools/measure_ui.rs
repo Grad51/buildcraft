@@ -60,6 +60,8 @@ pub struct MeasureView {
     /// The "1:N" field was edited and not yet applied.
     ratio_dirty: bool,
     pub precision: u8,
+    /// Lengths in feet and inches to the nearest 1/N inch, when the unit is ft.
+    pub feet_inches: Option<u8>,
     pub name: String,
     pub whole_page: bool,
     pub rect: [f64; 4],
@@ -90,6 +92,7 @@ impl Default for MeasureView {
             ratio_text: String::new(),
             ratio_dirty: false,
             precision: 2,
+            feet_inches: None,
             name: "Drawing scale".into(),
             whole_page: true,
             rect: [0.0, 0.0, 100.0, 100.0],
@@ -145,6 +148,25 @@ fn sync_ratio_text(state: &mut MeasureView, display: crate::units::Unit) {
 /// What the scale fields hold, to notice a hand edit.
 fn scale_fields(state: &MeasureView) -> (f64, f64, String, Option<PageUnit>) {
     (state.drawing_points, state.real_distance, state.unit.clone(), state.page_unit)
+}
+/// The architectural or engineering scale the fields hold, if they hold one.
+fn preset_of(state: &MeasureView) -> Option<&'static measure::imperial::Preset> {
+    measure::imperial::PRESETS.iter().find(|p| {
+        state.unit.trim() == "ft"
+            && state.page_unit == Some(PageUnit::In)
+            && (state.drawing_points - p.page_inches).abs() < 1e-9
+            && (state.real_distance - p.feet).abs() < 1e-9
+    })
+}
+/// Fill the scale fields for an architectural or engineering scale: its page inches are its feet,
+/// read in feet and inches (keeping the fraction already picked, else 1/16") or decimal feet.
+pub(crate) fn set_imperial(state: &mut MeasureView, p: &measure::imperial::Preset) {
+    state.drawing_points = p.page_inches;
+    state.page_unit = Some(PageUnit::In);
+    state.real_distance = p.feet;
+    state.unit = "ft".into();
+    state.feet_inches = p.feet_inches.then_some(state.feet_inches.unwrap_or(16));
+    state.error = None;
 }
 /// Fill the scale fields for 1:N: 1 mm on the page is N mm, shown in metres. Returns `false`, changing nothing, when `n` is not a usable ratio.
 pub(crate) fn set_ratio(state: &mut MeasureView, n: f64) -> bool {
@@ -389,6 +411,16 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
             state.unit = scale.unit;
             state.page_unit = None;
             state.precision = scale.precision;
+            // A title-block scale shows as one: 1/4" on the page = 1 ft.
+            if let Some(p) = measure::imperial::preset(&scale.ratio) {
+                state.drawing_points = p.page_inches;
+                state.page_unit = Some(PageUnit::In);
+                state.real_distance = p.feet;
+            }
+            state.feet_inches = match scale.format {
+                measure::Format::FeetInches { fraction } => Some(fraction),
+                measure::Format::Decimal => None,
+            };
         }
         sync_ratio_text(state, units);
     }
@@ -446,6 +478,25 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
             }
         });
     });
+    // Architectural and engineering scales as title blocks print them: 1/4" = 1'-0".
+    let mut imperial = None;
+    ui.horizontal(|ui| {
+        let label = ui.label(tl!("Imperial scale"));
+        let current = preset_of(state);
+        let combo =
+            egui::ComboBox::from_id_salt("measure-imperial-scales").selected_text(current.map_or("—", |p| p.label)).width(110.0).show_ui(ui, |ui| {
+                for p in measure::imperial::PRESETS {
+                    if ui.selectable_label(current == Some(p), p.label).clicked() {
+                        imperial = Some(*p);
+                    }
+                }
+            });
+        // The visible label names the combo box for assistive technology and tests.
+        combo.response.labelled_by(label.id);
+    });
+    if let Some(p) = imperial {
+        set_imperial(state, &p);
+    }
     ui.horizontal(|ui| {
         ui.add(egui::DragValue::new(&mut state.drawing_points).range(0.000001..=1e9));
         let page_unit = page_unit_of(state.page_unit, &state.unit, units);
@@ -463,6 +514,23 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
         let unit = ui.label(tl!("Unit"));
         ui.add(crate::widgets::line(&mut state.unit).desired_width(64.0).char_limit(12)).labelled_by(unit.id);
         ui.add(egui::DragValue::new(&mut state.precision).range(0..=6).prefix(format!("{} ", tl!("Decimals"))));
+    });
+    ui.horizontal(|ui| {
+        let mut on = state.feet_inches.is_some();
+        let feet = state.unit.trim() == "ft";
+        let toggle = ui.add_enabled(feet, widgets::checkbox(&mut on, tl!("Feet and inches"))).on_disabled_hover_text(tl!("Set the unit to ft."));
+        if toggle.changed() {
+            state.feet_inches = on.then_some(16);
+        }
+        if feet && let Some(fraction) = state.feet_inches.as_mut() {
+            let combo =
+                egui::ComboBox::from_id_salt("measure-inch-fraction").selected_text(format!("1/{fraction}\"")).width(48.0).show_ui(ui, |ui| {
+                    for f in measure::imperial::FRACTIONS {
+                        ui.selectable_value(fraction, f, format!("1/{f}\""));
+                    }
+                });
+            combo.response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, true, tl!("Round to")));
+        }
     });
     // A hand edit of the fields leaves the 1:N field showing the old ratio: say the new one.
     if scale_fields(state) != fields {
@@ -519,14 +587,19 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
         state.error = None;
     }
     // Apply scale, or a 1:N typed or picked: the fields are applied to the document at once.
-    if (apply || chosen.is_some())
+    if (apply || chosen.is_some() || imperial.is_some())
         && doc.allows_annotation()
         && let Some(info) = info
     {
         let result =
             doc.measurement_to_user(page, [0.0, 0.0]).and_then(|a| doc.measurement_to_user(page, [1.0, 0.0]).map(|b| (a, b))).and_then(|(a, b)| {
                 let page_unit = page_unit_of(state.page_unit, &state.unit, units);
-                Scale::ratio(a, b, state.drawing_points, page_unit, state.real_distance, &state.unit, state.precision).map_err(|e| e.to_string())
+                Scale::ratio(a, b, state.drawing_points, page_unit, state.real_distance, &state.unit, state.precision)
+                    .and_then(|scale| match state.feet_inches {
+                        Some(fraction) if scale.unit.trim() == "ft" => scale.with_feet_inches(fraction),
+                        _ => Ok(scale),
+                    })
+                    .map_err(|e| e.to_string())
             });
         match result {
             Ok(scale) => {
@@ -618,6 +691,25 @@ mod tests {
         let page_unit = page_unit_of(state.page_unit, &state.unit, crate::units::Unit::Points);
         let scale = Scale::ratio([0.0, 0.0], [1.0, 0.0], state.drawing_points, page_unit, state.real_distance, &state.unit, 4).expect("scale");
         measure::reading(Kind::Distance, &[from, to], &scale).expect("reading").value
+    }
+
+    #[test]
+    fn imperial_scales_fill_the_fields_and_read_feet_and_inches() {
+        let mut state = MeasureView { unit: "m".into(), ..Default::default() };
+        set_imperial(&mut state, measure::imperial::preset("1/4\" = 1'-0\"").expect("listed"));
+        assert_eq!((state.unit.as_str(), state.page_unit, state.feet_inches), ("ft", Some(PageUnit::In), Some(16)));
+        let scale = Scale::ratio([0.0, 0.0], [1.0, 0.0], state.drawing_points, PageUnit::In, state.real_distance, &state.unit, 2)
+            .and_then(|s| s.with_feet_inches(state.feet_inches.unwrap_or(16)))
+            .expect("scale");
+        // 18 pt is a foot at 1/4" = 1'-0"; 27.75 pt is 1'-6 1/2".
+        assert_eq!(measure::reading(Kind::Distance, &[[0.0, 0.0], [27.75, 0.0]], &scale).expect("reading").label, "1'-6 1/2\"");
+        // Engineering scales read decimal feet; a fraction picked earlier is kept for architectural ones.
+        state.feet_inches = Some(8);
+        set_imperial(&mut state, measure::imperial::preset("1\" = 20'").expect("listed"));
+        assert_eq!((state.drawing_points, state.real_distance, state.feet_inches), (1.0, 20.0, None));
+        state.feet_inches = Some(8);
+        set_imperial(&mut state, measure::imperial::preset("1/8\" = 1'-0\"").expect("listed"));
+        assert_eq!(state.feet_inches, Some(8));
     }
 
     #[test]

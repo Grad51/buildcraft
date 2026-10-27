@@ -3,7 +3,9 @@
 //! annotations use the measurement intents of line, polygon and polyline annotations (§12.5.6).
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod imperial;
 pub mod snap;
+pub use imperial::Format;
 use pdfcraft_annot::{Meta, NewAnnotation, Shape, Style};
 use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString};
 use serde::Serialize;
@@ -69,6 +71,8 @@ pub struct Scale {
     pub area_unit: String,
     pub precision: u8,
     pub ratio: String,
+    /// How lengths are shown: decimal, or feet and inches ([`imperial`]).
+    pub format: Format,
 }
 impl Default for Scale {
     fn default() -> Self {
@@ -81,6 +85,7 @@ impl Default for Scale {
             area_unit: "in^2".into(),
             precision: 2,
             ratio: "1 in = 1 in".into(),
+            format: Format::Decimal,
         }
     }
 }
@@ -95,6 +100,7 @@ impl Scale {
             area_unit: format!("{unit}^2"),
             precision,
             ratio: format!("1 pt = {units_per_user_unit} {unit}"),
+            format: Format::Decimal,
         };
         out.validate()?;
         Ok(out)
@@ -119,7 +125,11 @@ impl Scale {
             return Err(invalid("both sides of a scale ratio must be finite and positive"));
         }
         let mut out = Self::calibrate(a, b, real / (page * page_unit.points()), unit, precision)?;
-        out.ratio = format!("{} {} = {} {unit}", ratio_number(page), page_unit.label(), ratio_number(real));
+        out.ratio = match imperial::preset_for(page, page_unit, real, unit) {
+            // As the title block prints it: 1/4" = 1'-0".
+            Some(p) => p.label.into(),
+            None => format!("{} {} = {} {unit}", ratio_number(page), page_unit.label(), ratio_number(real)),
+        };
         out.validate()?;
         Ok(out)
     }
@@ -163,12 +173,17 @@ impl Scale {
         d.set(b"Type".to_vec(), Object::name("Measure"));
         d.set(b"Subtype".to_vec(), Object::name("RL"));
         d.set(b"R".to_vec(), PdfString::text(&self.ratio));
-        d.set(b"X".to_vec(), format(&self.unit, self.x));
+        // Lengths in feet and inches are two-entry formats; areas stay decimal.
+        let length = |factor: f64| match self.format {
+            Format::FeetInches { fraction } => imperial::number_formats(factor, fraction),
+            Format::Decimal => format(&self.unit, factor),
+        };
+        d.set(b"X".to_vec(), length(self.x));
         if self.x != self.y {
-            d.set(b"Y".to_vec(), format(&self.unit, self.y));
+            d.set(b"Y".to_vec(), length(self.y));
             d.set(b"CYX".to_vec(), Object::Real(1.0));
         }
-        d.set(b"D".to_vec(), format(&self.unit, self.distance_factor));
+        d.set(b"D".to_vec(), length(self.distance_factor));
         d.set(b"A".to_vec(), format(&self.area_unit, self.area_factor));
         Ok(d)
     }
@@ -179,6 +194,9 @@ impl Scale {
         let d = o.as_dict().ok_or_else(|| invalid("invalid measure dictionary"))?;
         if d.name(b"Subtype").is_some_and(|n| n != b"RL") {
             return Err(invalid("only rectilinear measurement scales are supported"));
+        }
+        if let Some(scale) = imperial::read(doc, d)? {
+            return Ok(scale);
         }
         let format = |key: &[u8]| -> Result<(String, f64, u8)> {
             let a = doc.resolve(d.get(key).ok_or_else(|| invalid("measurement scale lacks a number format"))?);
@@ -210,7 +228,7 @@ impl Scale {
             return Err(invalid("different coordinate and distance units are not supported yet"));
         }
         let (area_unit, area_factor, _) = format(b"A")?;
-        let out = Self { x, y, unit, distance_factor, area_factor, area_unit, precision, ratio: text(d, b"R") };
+        let out = Self { x, y, unit, distance_factor, area_factor, area_unit, precision, ratio: text(d, b"R"), format: Format::Decimal };
         out.validate()?;
         Ok(out)
     }
@@ -307,7 +325,8 @@ pub fn reading(kind: Kind, points: &[Point], scale: &Scale) -> Result<Reading> {
     length *= scale.distance_factor;
     let value = if kind == Kind::Area { area } else { length };
     let unit = if kind == Kind::Area { scale.area_unit.clone() } else { scale.unit.clone() };
-    let label = format!("{value:.precision$} {unit}", precision = usize::from(scale.precision));
+    let label =
+        if kind == Kind::Area { format!("{value:.precision$} {unit}", precision = usize::from(scale.precision)) } else { scale.length_label(value) };
     if !value.is_finite() {
         return Err(invalid("measurement overflows its scale"));
     }
