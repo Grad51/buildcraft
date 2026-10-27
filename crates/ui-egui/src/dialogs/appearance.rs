@@ -9,13 +9,14 @@ use crate::widgets;
 
 /// The themes each card offers. One of each today; a new theme is one more row here.
 pub const LIGHT_THEMES: &[(ThemeKind, &str)] = &[(ThemeKind::Light, "Light gray")];
-pub const DARK_THEMES: &[(ThemeKind, &str)] = &[(ThemeKind::Dark, "Dark gray")];
+pub const DARK_THEMES: &[(ThemeKind, &str)] = &[(ThemeKind::Dark, "Dark gray"), (ThemeKind::Estimator, "Estimator")];
 
 fn mode_label(preference: ThemePreference) -> &'static str {
     match preference {
         ThemePreference::System => "Use system setting",
         ThemePreference::Light => "Light",
         ThemePreference::Dark => "Dark",
+        ThemePreference::Estimator => "Estimator",
     }
 }
 
@@ -24,6 +25,7 @@ fn mode_command(preference: ThemePreference) -> &'static str {
         ThemePreference::System => "view.theme.system",
         ThemePreference::Light => "view.theme.light",
         ThemePreference::Dark => "view.theme.dark",
+        ThemePreference::Estimator => "view.theme.estimator",
     }
 }
 
@@ -83,8 +85,11 @@ fn preview(ui: &mut egui::Ui, kind: ThemeKind, width: f32) {
 }
 
 /// One theme card: its title, Active when it is what shows now, a preview of the chosen theme
-/// and a radio row per theme. Returns true when the card or one of its radio rows was clicked.
-fn card(ui: &mut egui::Ui, t: &Tokens, title: &str, active: bool, themes: &[(ThemeKind, &str)]) -> bool {
+/// and a radio row per theme. `current` is the theme showing now when it belongs to this card.
+/// Returns the theme picked on the card, if any.
+fn card(ui: &mut egui::Ui, t: &Tokens, title: &str, current: Option<ThemeKind>, themes: &[(ThemeKind, &str)]) -> Option<ThemeKind> {
+    let active = current.is_some();
+    let shown = shown_kind(current, themes);
     let inner = egui::Frame::new()
         .fill(t.card)
         .stroke(egui::Stroke::new(1.0, if active { t.accent } else { t.border }))
@@ -99,19 +104,32 @@ fn card(ui: &mut egui::Ui, t: &Tokens, title: &str, active: bool, themes: &[(The
                 }
             });
             ui.add_space(4.0);
-            let shown = themes.first().map_or(ThemeKind::Light, |(kind, _)| *kind);
             preview(ui, shown, ui.available_width());
             ui.add_space(4.0);
-            let mut clicked = false;
+            let mut picked = None;
             for (kind, label) in themes {
-                // One theme per card today, so it is always the chosen one.
-                clicked |= ui.add(widgets::radio(*kind == shown, tl!(label))).clicked();
+                if ui.add(widgets::radio(*kind == shown, tl!(label))).clicked() {
+                    picked = Some(*kind);
+                }
             }
-            clicked
+            picked
         });
-    // The whole card picks its theme, not just the radio row.
+    // The whole card picks its shown theme, not just a radio row.
     let whole = inner.response.interact(egui::Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand);
-    inner.inner || whole.clicked()
+    inner.inner.or(whole.clicked().then_some(shown))
+}
+
+/// The theme a card previews: the current one when it is on this card, else the card's first.
+fn shown_kind(current: Option<ThemeKind>, themes: &[(ThemeKind, &str)]) -> ThemeKind {
+    current.or_else(|| themes.first().map(|(kind, _)| *kind)).unwrap_or(ThemeKind::Light)
+}
+
+fn preference_for(kind: ThemeKind) -> ThemePreference {
+    match kind {
+        ThemeKind::Light => ThemePreference::Light,
+        ThemeKind::Dark => ThemePreference::Dark,
+        ThemeKind::Estimator => ThemePreference::Estimator,
+    }
 }
 
 /// The Appearance section of Preferences.
@@ -120,7 +138,7 @@ pub fn preferences_section(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens)
     ui.horizontal(|ui| {
         let label = ui.label(tl!("Appearance mode"));
         let combo = egui::ComboBox::from_id_salt("appearance-mode").selected_text(tl!(mode_label(app.theme_preference))).show_ui(ui, |ui| {
-            for preference in [ThemePreference::System, ThemePreference::Light, ThemePreference::Dark] {
+            for preference in [ThemePreference::System, ThemePreference::Light, ThemePreference::Dark, ThemePreference::Estimator] {
                 if ui.selectable_label(app.theme_preference == preference, tl!(mode_label(preference))).clicked() {
                     app.execute(mode_command(preference));
                     ui.close();
@@ -134,11 +152,12 @@ pub fn preferences_section(ui: &mut egui::Ui, app: &mut PdfCraftApp, t: &Tokens)
     let light_active = app.theme == ThemeKind::Light;
     ui.columns(2, |cols| {
         let [light, dark] = cols else { return };
-        if card(light, t, tl!("Light theme"), light_active, LIGHT_THEMES) {
-            app.execute(mode_command(ThemePreference::Light));
+        let current = app.theme;
+        if let Some(kind) = card(light, t, tl!("Light theme"), light_active.then_some(current), LIGHT_THEMES) {
+            app.execute(mode_command(preference_for(kind)));
         }
-        if card(dark, t, tl!("Dark theme"), !light_active, DARK_THEMES) {
-            app.execute(mode_command(ThemePreference::Dark));
+        if let Some(kind) = card(dark, t, tl!("Dark theme"), (!light_active).then_some(current), DARK_THEMES) {
+            app.execute(mode_command(preference_for(kind)));
         }
     });
     ui.add_space(4.0);

@@ -288,7 +288,7 @@ fn press_darkens_then_sinks() {
 #[test]
 fn text_is_readable_on_every_surface() {
     // #76: the faintest text (hints, zoom level, captions) was 3.3:1 in the light theme.
-    for kind in [ThemeKind::Light, ThemeKind::Dark] {
+    for kind in [ThemeKind::Light, ThemeKind::Dark, ThemeKind::Estimator] {
         let t = Tokens::for_kind(kind);
         for (name, fg) in [("text", t.text), ("text_muted", t.text_muted), ("text_faint", t.text_faint)] {
             for bg in [t.chrome, t.panel, t.card, t.pasteboard] {
