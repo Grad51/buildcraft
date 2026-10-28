@@ -25,6 +25,7 @@ A fourth appearance, beside System, Light and Dark: slate-gray dark chrome, blue
 | `crates/ui-egui/src/menus.rs` | `view.theme.estimator` in the View menu, with its check mark |
 | `crates/ui-egui/src/app/control.rs` | Control channel accepts `theme=estimator` |
 | `crates/engine/src/commands.rs` | `view.theme.estimator` registered |
+| `crates/ui-egui/tests/it/theme.rs`, `theme_button.rs` | The title-bar cycle and the `theme` option include Estimator; dark-mode checks use `Tokens::dark()` |
 
 ## Branding
 

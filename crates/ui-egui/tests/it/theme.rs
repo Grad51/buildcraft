@@ -20,16 +20,16 @@ fn assert_theme(h: &Harness<'static, PdfCraftApp>, preference: ThemePreference, 
     assert_eq!(h.state().theme_preference, preference);
     assert_eq!(h.state().theme, kind);
     assert_eq!(Tokens::get(&h.ctx).kind, kind);
-    assert_eq!(h.ctx.global_style().visuals.dark_mode, kind == ThemeKind::Dark);
+    assert_eq!(h.ctx.global_style().visuals.dark_mode, Tokens::for_kind(kind).dark());
     assert_eq!(h.ctx.options(|o| o.theme_preference), egui::ThemePreference::System);
     for branch in [egui::Theme::Light, egui::Theme::Dark] {
         let style = h.ctx.style_of(branch);
-        assert_eq!(style.visuals.dark_mode, kind == ThemeKind::Dark);
+        assert_eq!(style.visuals.dark_mode, Tokens::for_kind(kind).dark());
         assert_eq!(style.visuals.panel_fill, Tokens::for_kind(kind).panel);
     }
 }
 
-/// A click on the title bar's theme button cycles Light, Dark, System.
+/// A click on the title bar's theme button cycles Light, Dark, Estimator (BuildCraft), System.
 fn click_toolbar(h: &mut Harness<'static, PdfCraftApp>, label: &str) {
     h.get_by_label(&format!("Display theme: {label}")).click();
     h.run_steps(3);
@@ -74,7 +74,14 @@ fn toolbar_and_view_menu_share_three_state_preferences() {
     click_toolbar(&mut h, "Light gray");
     assert_theme(&h, ThemePreference::Dark, ThemeKind::Dark);
     click_toolbar(&mut h, "Dark gray");
+    assert_theme(&h, ThemePreference::Estimator, ThemeKind::Estimator);
+    click_toolbar(&mut h, "Estimator");
     assert_theme(&h, ThemePreference::System, ThemeKind::Dark);
+
+    open_view_menu(&mut h);
+    h.get_by_label("Estimator").click();
+    h.run_steps(3);
+    assert_theme(&h, ThemePreference::Estimator, ThemeKind::Estimator);
 
     open_view_menu(&mut h);
     h.get_by_label("Light gray").click();
@@ -141,7 +148,7 @@ fn commands_and_options_apply_before_the_first_frame() {
     assert_eq!(app.theme, ThemeKind::Dark);
     app.run_command("view.theme.light");
     app.set_option("theme", "dark").unwrap();
-    assert!(app.set_option("theme", "purple").unwrap_err().contains("light, dark, or system"));
+    assert!(app.set_option("theme", "purple").unwrap_err().contains("light, dark, estimator, or system"));
     assert_eq!(app.theme_preference, ThemePreference::Dark);
     assert_eq!(app.theme, ThemeKind::Dark);
 }
