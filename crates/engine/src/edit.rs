@@ -132,8 +132,13 @@ pub enum Edit {
     },
     /// Add a calibrated distance, perimeter or area annotation.
     AddMeasurement(measure::NewMeasurement),
-    /// Place a count marker (BuildCraft).
-    AddCount(measure::count::NewCount),
+    /// Place a measurement or count marker with its breakdown (BuildCraft).
+    AddTakeoff(measure::takeoff::NewTakeoff),
+    /// Change the breakdown of measurements and counts, as (page, annotation index) (BuildCraft).
+    SetBreakdown {
+        targets: Vec<(usize, usize)>,
+        patch: measure::takeoff::Patch,
+    },
     /// Store a drawing scale for a rectangular viewport (PDF user space).
     SetMeasurementScale {
         page: usize,

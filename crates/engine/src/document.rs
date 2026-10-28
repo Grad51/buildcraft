@@ -214,6 +214,11 @@ impl Document {
         let e = self.editor.as_ref().ok_or("the document can't be read")?;
         Ok(measure::count::list(&e.cos))
     }
+    /// Every measurement and count as takeoff rows with breakdowns (BuildCraft).
+    pub fn takeoff_rows(&self) -> Result<measure::takeoff::Rows, String> {
+        let e = self.editor.as_ref().ok_or("the document can't be read")?;
+        Ok(measure::takeoff::rows(&e.cos))
+    }
     pub fn measurement_scale(&self, page: usize, at: measure::Point) -> Result<measure::Scale, String> {
         let e = self.editor.as_ref().ok_or("the document can't be read")?;
         measure::scale_at(&e.cos, page, at).map_err(|e| e.to_string())

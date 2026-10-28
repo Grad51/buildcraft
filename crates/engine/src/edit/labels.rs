@@ -194,7 +194,15 @@ impl Edit {
                 pdfcraft_measure::Kind::Area => "Measure area",
             }),
             Edit::SetMeasurementScale { .. } => Label::of("Set measurement scale"),
-            Edit::AddCount(_) => Label::of("Add count"),
+            Edit::AddTakeoff(t) => Label::of(match &t.markup {
+                pdfcraft_measure::takeoff::Markup::Count(_) => "Add count",
+                pdfcraft_measure::takeoff::Markup::Measurement(m) => match m.kind {
+                    pdfcraft_measure::Kind::Distance => "Measure distance",
+                    pdfcraft_measure::Kind::Perimeter => "Measure perimeter",
+                    pdfcraft_measure::Kind::Area => "Measure area",
+                },
+            }),
+            Edit::SetBreakdown { .. } => Label::of("Set breakdown"),
             Edit::AddAnnotation(a) => Label::of(add_annotation(&a.shape)),
             Edit::AddCustomStamp { .. } => Label::of("Add stamp"),
             Edit::DeleteAnnotation { .. } => Label::of("Delete comment"),

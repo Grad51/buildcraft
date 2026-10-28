@@ -9238,3 +9238,46 @@ fn counts_add_up_per_item_undo_and_survive_saving() {
     }
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn takeoff_rows_group_by_breakdown_and_breakdowns_change_undoably() {
+    // BuildCraft: the Markups list behind the takeoff workspace.
+    let dir = workdir("takeoff");
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({"path":"a.pdf"}))["doc"].as_u64().unwrap();
+    ok(&mut a, "count_add", json!({"doc":doc,"page":1,"at":[50,60],"item":"Receptacle","building":"A","floor":"Level 1"}));
+    ok(&mut a, "count_add", json!({"doc":doc,"page":1,"at":[90,60],"item":"Receptacle","floor":"Level 2"}));
+    ok(&mut a, "count_add", json!({"doc":doc,"page":1,"at":[130,60],"item":"Switch"}));
+    let listed = ok(&mut a, "takeoff_list", json!({"doc":doc,"group_by":"floor"}));
+    let rows = listed["rows"].as_array().unwrap();
+    assert_eq!(rows.len(), 3);
+    assert_eq!(rows[0]["breakdown"], json!({"building":"A","floor":"Level 1","area":"","system":"","bid_item":""}));
+    assert_eq!((rows[0]["type"].as_str(), rows[0]["quantity"].as_str(), rows[2]["index"].as_u64()), (Some("count"), Some("1 ea"), Some(3)));
+    let groups: Vec<_> = listed["groups"].as_array().unwrap().iter().map(|g| (g["key"].as_str().unwrap().to_owned(), g["rows"].clone())).collect();
+    assert_eq!(groups, [("Level 1".into(), json!([1])), ("Level 2".into(), json!([2])), (String::new(), json!([3]))]);
+
+    ok(&mut a, "takeoff_breakdown", json!({"doc":doc,"markups":[[1,2],[1,3]],"floor":"Level 1","system":"Power"}));
+    let items = ok(&mut a, "takeoff_list", json!({"doc":doc,"group_by":"floor"}))["groups"].clone();
+    assert_eq!(items[0]["totals"], json!([{"unit":"ea","value":3.0,"text":"3 ea"}]));
+    ok(&mut a, "edit_undo", json!({"doc":doc}));
+    assert_eq!(ok(&mut a, "takeoff_list", json!({"doc":doc}))["rows"][2]["breakdown"]["floor"], "");
+    ok(&mut a, "edit_redo", json!({"doc":doc}));
+    ok(&mut a, "doc_save", json!({"doc":doc,"path":"takeoff.pdf"}));
+    let reopened = ok(&mut a, "doc_open", json!({"path":"takeoff.pdf"}))["doc"].as_u64().unwrap();
+    assert_eq!(ok(&mut a, "takeoff_list", json!({"doc":reopened}))["rows"][2]["breakdown"]["system"], "Power");
+
+    let before = ok(&mut a, "doc_list", json!({}));
+    for args in [
+        json!({"doc":doc,"markups":[[1,1]]}),
+        json!({"doc":doc,"markups":[],"floor":"x"}),
+        json!({"doc":doc,"markups":[[0,1]],"floor":"x"}),
+        json!({"doc":doc,"markups":[[1,9]],"floor":"x"}),
+        json!({"doc":doc,"markups":[[1]],"floor":"x"}),
+        json!({"doc":doc,"markups":[[1,1]],"floor":"x".repeat(129)}),
+    ] {
+        assert!(a.call("takeoff_breakdown", &args).is_err(), "{args}");
+        assert_eq!(ok(&mut a, "doc_list", json!({})), before);
+    }
+    assert!(a.call("takeoff_list", &json!({"doc":doc,"group_by":"colour"})).is_err());
+    let _ = std::fs::remove_dir_all(dir);
+}

@@ -34,19 +34,20 @@ const PALETTE: [[f32; 3]; 8] = [
 ];
 
 /// A click on the page with Count: one marker for the current item at `at` (PDF user space).
-pub(crate) fn click(state: &mut CountView, pending: &mut Option<Edit>, page: usize, at: measure::Point, author: &str) -> Result<(), String> {
+pub(crate) fn click(
+    state: &mut CountView,
+    breakdown: &measure::takeoff::Breakdown,
+    pending: &mut Option<Edit>,
+    page: usize,
+    at: measure::Point,
+    author: &str,
+) -> Result<(), String> {
     let item = state.item.trim();
     if item.is_empty() {
         return Err(tl!("Name the item to count first.").into());
     }
-    *pending = Some(Edit::AddCount(measure::count::NewCount {
-        page,
-        at,
-        item: item.into(),
-        color: state.color.map(f64::from),
-        size: state.size,
-        author: author.into(),
-    }));
+    let marker = measure::count::NewCount { page, at, item: item.into(), color: state.color.map(f64::from), size: state.size, author: author.into() };
+    *pending = Some(Edit::AddTakeoff(measure::takeoff::NewTakeoff { markup: measure::takeoff::Markup::Count(marker), breakdown: breakdown.clone() }));
     Ok(())
 }
 
@@ -187,12 +188,15 @@ mod tests {
     fn a_click_counts_the_trimmed_item_and_an_unnamed_item_is_refused() {
         let mut state = CountView { item: "  Fixture A ".into(), ..Default::default() };
         let mut pending = None;
-        click(&mut state, &mut pending, 2, [10.0, 20.0], "J").expect("named");
-        let Some(Edit::AddCount(c)) = pending else { panic!("no count edit") };
+        let floor = measure::takeoff::Breakdown { floor: "Level 2".into(), ..Default::default() };
+        click(&mut state, &floor, &mut pending, 2, [10.0, 20.0], "J").expect("named");
+        let Some(Edit::AddTakeoff(t)) = pending else { panic!("no count edit") };
+        let measure::takeoff::Markup::Count(c) = t.markup else { panic!("not a count") };
         assert_eq!((c.page, c.at, c.item.as_str(), c.author.as_str()), (2, [10.0, 20.0], "Fixture A", "J"));
+        assert_eq!(t.breakdown.floor, "Level 2", "tagged with the current breakdown");
         state.item = "   ".into();
         let mut pending = None;
-        assert!(click(&mut state, &mut pending, 0, [0.0, 0.0], "J").is_err());
+        assert!(click(&mut state, &floor, &mut pending, 0, [0.0, 0.0], "J").is_err());
         assert!(pending.is_none());
     }
 }

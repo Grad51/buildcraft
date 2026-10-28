@@ -601,3 +601,133 @@ fn count_csv_blocks_formula_cells() {
         count::totals(&[count::Marker { page: 0, index: 0, id: String::new(), item: "=HYPERLINK(\"x\")".into(), at: [0.0, 0.0], color: None }]);
     assert_eq!(count::csv(&totals), "Item,Count,Pages\r\n\"'=HYPERLINK(\"\"x\"\")\",1,\"1:1\"\r\n");
 }
+fn two_pages() -> Document {
+    Document::open(Arc::new(
+        Pdf::new()
+            .obj("<< /Type /Catalog /Pages 2 0 R >>")
+            .obj("<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 612 792] >>")
+            .obj("<< /Type /Page /Parent 2 0 R >>")
+            .obj("<< /Type /Page /Parent 2 0 R >>")
+            .build(),
+    ))
+    .unwrap()
+}
+fn tagged(building: &str, floor: &str, system: &str) -> takeoff::Breakdown {
+    takeoff::Breakdown { building: building.into(), floor: floor.into(), system: system.into(), ..Default::default() }
+}
+#[test]
+fn takeoff_rows_merge_measurements_and_counts_with_breakdowns_that_survive_saving() {
+    use takeoff::{GroupBy, Markup, NewTakeoff, RowKind};
+    let mut d = two_pages();
+    let count = |page: usize, x: f64, item: &str| count::NewCount {
+        page,
+        at: [x, 100.0],
+        item: item.into(),
+        color: [0.9, 0.1, 0.1],
+        size: 10.0,
+        author: "J".into(),
+    };
+    let place =
+        |d: &mut Document, markup: Markup, b: takeoff::Breakdown| takeoff::add(d, &NewTakeoff { markup, breakdown: b }, &Meta::default()).unwrap();
+    place(&mut d, Markup::Count(count(1, 100.0, "Receptacle")), tagged("A", "Level 2", "Power"));
+    place(&mut d, Markup::Measurement(new(Kind::Distance, vec![[0.0, 0.0], [3.0, 4.0]])), tagged(" A ", "Level 1", "Power"));
+    place(&mut d, Markup::Count(count(0, 200.0, "Receptacle")), tagged("A", "Level 1", "Power"));
+    // Untagged markups keep no breakdown key at all.
+    place(&mut d, Markup::Count(count(0, 300.0, "Switch")), takeoff::Breakdown::default());
+    let reopened = Document::open(Arc::new(write_full(&d, &SaveOptions::default()).unwrap())).unwrap();
+    let rows = takeoff::rows(&reopened);
+    assert!(!rows.truncated);
+    let summary: Vec<_> = rows.rows.iter().map(|r| (r.page, r.kind, r.item.as_str(), r.breakdown.floor.as_str())).collect();
+    assert_eq!(
+        summary,
+        [
+            (0, RowKind::Length, "Room 1", "Level 1"),
+            (0, RowKind::Count, "Receptacle", "Level 1"),
+            (0, RowKind::Count, "Switch", ""),
+            (1, RowKind::Count, "Receptacle", "Level 2")
+        ]
+    );
+    assert_eq!(rows.rows[0].breakdown.building, "A", "values are trimmed");
+    assert_eq!((rows.rows[1].value, rows.rows[1].unit.as_str(), rows.rows[1].author.as_str()), (1.0, "ea", "J"));
+    let length = rows.rows[0].value;
+    assert!(length > 0.0);
+
+    let floors = takeoff::group(&rows.rows, GroupBy::Field(takeoff::Field::Floor));
+    let keys: Vec<_> = floors.iter().map(|g| (g.key.as_str(), g.rows.clone())).collect();
+    assert_eq!(keys, [("Level 1", vec![0, 1]), ("Level 2", vec![3]), ("", vec![2])], "unassigned goes last");
+    assert_eq!(floors[0].totals, [("ea".to_string(), 1.0), (rows.rows[0].unit.clone(), length)]);
+    let items = takeoff::group(&rows.rows, GroupBy::Item);
+    assert_eq!(items.iter().map(|g| g.key.as_str()).collect::<Vec<_>>(), ["Receptacle", "Room 1", "Switch"]);
+    assert_eq!(items[0].totals, [("ea".to_string(), 2.0)]);
+    let all = takeoff::group(&rows.rows, GroupBy::None);
+    assert_eq!((all.len(), all[0].rows.len()), (1, 4));
+    assert_eq!(takeoff::total_text("ea", 2.0), "2 ea");
+    assert_eq!(takeoff::total_text("ft", 61.5), "61.50 ft");
+}
+#[test]
+fn breakdowns_change_together_or_not_at_all() {
+    use takeoff::{Markup, NewTakeoff, Patch};
+    let mut d = two_pages();
+    let c = |x: f64| count::NewCount { page: 0, at: [x, 100.0], item: "Switch".into(), color: [0.0, 0.0, 1.0], size: 8.0, author: String::new() };
+    for x in [100.0, 200.0] {
+        takeoff::add(&mut d, &NewTakeoff { markup: Markup::Count(c(x)), breakdown: tagged("A", "L1", "Lighting") }, &Meta::default()).unwrap();
+    }
+    // A plain comment at index 2.
+    pdfcraft_annot::add_annotation(
+        &mut d,
+        &pdfcraft_annot::NewAnnotation {
+            page: 0,
+            shape: pdfcraft_annot::Shape::Oval { rect: [0.0, 0.0, 10.0, 10.0] },
+            style: Style::default(),
+            contents: "note".into(),
+            author: String::new(),
+        },
+        &Meta::default(),
+    )
+    .unwrap();
+    let floor = |d: &Document| takeoff::rows(d).rows.iter().map(|r| r.breakdown.floor.clone()).collect::<Vec<_>>();
+    let to_l2 = Patch { floor: Some("L2".into()), ..Patch::default() };
+    for (targets, why) in [
+        (vec![(0, 0), (0, 2)], "a plain comment has no breakdown"),
+        (vec![(0, 0), (0, 9)], "no such annotation"),
+        (vec![(0, 0), (5, 0)], "no such page"),
+        (vec![], "nothing to change"),
+    ] {
+        assert!(takeoff::set_breakdown(&mut d, &targets, &to_l2).is_err(), "{why}");
+        assert_eq!(floor(&d), ["L1", "L1"], "{why}: nothing changed");
+    }
+    let too_long = Patch { area: Some("x".repeat(129)), ..Patch::default() };
+    assert!(takeoff::set_breakdown(&mut d, &[(0, 0)], &too_long).is_err());
+    let control = Patch { area: Some("a\nb".into()), ..Patch::default() };
+    assert!(takeoff::set_breakdown(&mut d, &[(0, 0)], &control).is_err());
+
+    takeoff::set_breakdown(&mut d, &[(0, 0), (0, 1), (0, 0)], &to_l2).unwrap();
+    let rows = takeoff::rows(&d).rows;
+    assert_eq!(floor(&d), ["L2", "L2"]);
+    assert_eq!(rows[0].breakdown.system, "Lighting", "untouched fields are kept");
+    // Clearing every field removes the dictionary.
+    takeoff::set_breakdown(&mut d, &[(0, 1)], &Patch::all(&takeoff::Breakdown::default())).unwrap();
+    assert!(takeoff::rows(&d).rows[1].breakdown.is_empty());
+    let (_, dict) = annot(&d, 0, 1).unwrap();
+    assert!(dict.get(takeoff::KEY).is_none());
+}
+#[test]
+fn takeoff_csv_lists_breakdowns_and_blocks_formula_cells() {
+    let row = takeoff::Row {
+        page: 2,
+        index: 0,
+        id: String::new(),
+        kind: takeoff::RowKind::Count,
+        item: "=cmd()".into(),
+        value: 1.0,
+        unit: "ea".into(),
+        quantity: "1 ea".into(),
+        breakdown: takeoff::Breakdown { building: "A".into(), bid_item: "-26 05 00".into(), ..Default::default() },
+        color: None,
+        author: "J \"Q\"".into(),
+    };
+    assert_eq!(
+        takeoff::csv(&[row]),
+        "Page,Item,Type,Value,Unit,Quantity,Building,Floor,Area,System,Bid item,Author\r\n3,\"'=cmd()\",Count,1,\"ea\",\"1 ea\",\"A\",\"\",\"\",\"\",\"'-26 05 00\",\"J \"\"Q\"\"\"\r\n"
+    );
+}
