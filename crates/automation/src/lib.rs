@@ -19,6 +19,7 @@ mod batch;
 mod comments;
 mod content;
 mod conventions;
+mod count;
 pub mod file_access;
 mod forms;
 mod layers;

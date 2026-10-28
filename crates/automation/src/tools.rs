@@ -693,6 +693,10 @@ pub fn tools() -> Vec<ToolDef> {
             .cmd("measure.perimeter").with(measure_schema()),
         t("measure_area", "Measure area", "Add an undoable area annotation from a simple polygon. The last edge closes automatically.")
             .cmd("measure.area").with(measure_schema()),
+        t("count_add", "Add a count marker", "Place an undoable count marker (a filled circle) at a point, counting one of item. Markers with the same item add up; count_list reports the totals. color is [r, g, b] from 0 to 1 (default red); size is the diameter in points (default 10).")
+            .cmd("measure.count").with(schema(json!({"doc":doc(),"page":{"type":"integer","minimum":1},"at":point(),"item":{"type":"string","minLength":1,"maxLength":128},"color":{"type":"array","items":{"type":"number","minimum":0,"maximum":1},"minItems":3,"maxItems":3},"size":{"type":"number","minimum":2,"maximum":72},"author":{"type":"string"}}), &["doc","page","at","item"])),
+        t("count_list", "List counts", "Count markers and their totals per item, overall and per page (pages 1-based), items in name order. Optionally only one item.")
+            .ro().with(schema(json!({"doc":doc(),"item":{"type":"string"}}), &["doc"])),
         t("measure_info", "Read a measurement", "Calculate a live distance, perimeter or area, deltas, angle and scale without adding an annotation. Incomplete paths are allowed.")
             .ro().cmd("measure.info").with(schema(json!({"doc":doc(),"page":{"type":"integer","minimum":1},"points":measure_points(),"type":{"type":"string","enum":["distance","perimeter","area"]}}), &["doc","page","points"])),
         t("measure_list", "List measurements", "Saved measurement annotations with calculated values, scale and vertices in display coordinates. Measurements with unsupported imported formats (compound or fractional units, non-rectilinear scales) or invalid geometry are listed under unsupported with a reason.")

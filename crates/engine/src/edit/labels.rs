@@ -194,6 +194,7 @@ impl Edit {
                 pdfcraft_measure::Kind::Area => "Measure area",
             }),
             Edit::SetMeasurementScale { .. } => Label::of("Set measurement scale"),
+            Edit::AddCount(_) => Label::of("Add count"),
             Edit::AddAnnotation(a) => Label::of(add_annotation(&a.shape)),
             Edit::AddCustomStamp { .. } => Label::of("Add stamp"),
             Edit::DeleteAnnotation { .. } => Label::of("Delete comment"),

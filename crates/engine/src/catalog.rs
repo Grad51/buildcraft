@@ -429,6 +429,7 @@ pub static TOOL_GROUPS: &[ToolGroup] = &[
                 item("Distance", "ruler", "measure.distance", Ready),
                 item("Perimeter", "ruler", "measure.perimeter", Ready),
                 item("Area", "ruler", "measure.area", Ready),
+                item("Count", "hash", "measure.count", Ready),
                 item("Drawing scale", "ruler", "measure.scale", Ready),
                 item("Measurement information", "ruler", "measure.info", Ready),
                 item("Snapping", "ruler", "measure.snap", Ready),

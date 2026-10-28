@@ -679,6 +679,8 @@ impl Automation {
             "measure_area" => self.measurement_add(&a, pdfcraft_engine::measure::Kind::Area)?,
             "measure_info" => self.measurement_info(&a)?,
             "measure_list" => self.measurement_list(&a)?,
+            "count_add" => self.count_add(&a)?,
+            "count_list" => self.count_list(&a)?,
             "measure_scale" => self.measurement_scale(&a)?,
             "measure_snap" => self.measurement_snap(&a)?,
             "measure_export" => self.measurement_export(&a)?,

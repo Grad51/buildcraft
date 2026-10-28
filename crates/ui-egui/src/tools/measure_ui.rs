@@ -6,12 +6,16 @@ use pdfcraft_engine::{
     measure::{self, Kind, NewMeasurement, PageUnit, Point, Reading, Scale},
 };
 
+mod count;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Tool {
     Distance,
     Perimeter,
     Area,
     Calibrate,
+    /// Click-to-count markers (BuildCraft, [`count`]).
+    Count,
 }
 impl Tool {
     pub fn name(self) -> &'static str {
@@ -20,6 +24,7 @@ impl Tool {
             Self::Perimeter => "perimeter",
             Self::Area => "area",
             Self::Calibrate => "calibrate",
+            Self::Count => "count",
         }
     }
     pub fn from_name(s: &str) -> Option<Self> {
@@ -28,6 +33,7 @@ impl Tool {
             "perimeter" => Some(Self::Perimeter),
             "area" => Some(Self::Area),
             "calibrate" => Some(Self::Calibrate),
+            "count" => Some(Self::Count),
             _ => None,
         }
     }
@@ -66,6 +72,8 @@ pub struct MeasureView {
     pub whole_page: bool,
     pub rect: [f64; 4],
     pub label: String,
+    /// The Count tool's item, colour and totals.
+    pub count: count::CountView,
     seeded_page: Option<usize>,
     /// Snapping geometry (or why it failed) per (page, edit generation): extraction is not
     /// repeated on every hover frame.
@@ -97,6 +105,7 @@ impl Default for MeasureView {
             whole_page: true,
             rect: [0.0, 0.0, 100.0, 100.0],
             label: String::new(),
+            count: Default::default(),
             seeded_page: None,
             paths: None,
             listing: None,
@@ -259,6 +268,10 @@ pub(crate) fn page_input(
             point = measure::snap::constrain(*last, point);
         }
         hover = Some(point);
+        if resp.clicked() && tool == Tool::Count {
+            state.error = count::click(&mut state.count, &mut view.pending_edit, page, point, author).err();
+            return;
+        }
         if resp.clicked() {
             if state.page != Some(page) {
                 state.cancel();
@@ -384,17 +397,33 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
     };
     let mut tool = None;
     ui.horizontal(|ui| {
-        for (label, value) in [("Distance", Tool::Distance), ("Perimeter", Tool::Perimeter), ("Area", Tool::Area)] {
+        // Tighter than the default so the four tools fit one row of the panel.
+        ui.spacing_mut().item_spacing.x = 2.0;
+        ui.spacing_mut().button_padding.x = 5.0;
+        for (label, value) in [("Distance", Tool::Distance), ("Perimeter", Tool::Perimeter), ("Area", Tool::Area), ("Count", Tool::Count)] {
             if ui.selectable_label(app.quick_tool == QuickTool::Measure(value), tl!(label)).clicked() {
                 tool = Some(value);
             }
         }
     });
+    let counting = app.quick_tool == QuickTool::Measure(Tool::Count);
     let Some(doc) = app.session.get(id) else { return };
     let units = app.units;
     let page = app.views[index].current;
     let info = doc.info.pages.get(page).cloned();
     let state = &mut app.views[index].measure;
+    // Counting needs no scale: the panel is the item being counted and the totals.
+    if counting {
+        let export_counts = count::panel(ui, &mut state.count, doc, true);
+        if let Some(tool) = tool {
+            state.cancel();
+            app.quick_tool = QuickTool::Measure(tool);
+        }
+        if export_counts {
+            count::export_csv(app);
+        }
+        return;
+    }
     if state.listing.as_ref().is_none_or(|(g, _)| *g != doc.edit_generation()) {
         state.listing = Some((doc.edit_generation(), doc.measurements()));
     }
@@ -581,6 +610,7 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
         }
     }
     let export = ui.button(tl!("Export measurements as CSV")).clicked();
+    let export_counts = count::panel(ui, &mut state.count, doc, false);
     if let Some(n) = chosen
         && set_ratio(state, n)
     {
@@ -629,6 +659,9 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
     }
     if export {
         export_csv(app);
+    }
+    if export_counts {
+        count::export_csv(app);
     }
 }
 pub(crate) fn command(app: &mut PdfCraftApp, id: &str) {

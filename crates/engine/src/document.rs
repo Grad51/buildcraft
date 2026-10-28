@@ -209,6 +209,11 @@ impl Document {
         let e = self.editor.as_ref().ok_or("the document can't be read")?;
         Ok(measure::list(&e.cos))
     }
+    /// Count markers (BuildCraft) and their totals per item.
+    pub fn counts(&self) -> Result<measure::count::Listing, String> {
+        let e = self.editor.as_ref().ok_or("the document can't be read")?;
+        Ok(measure::count::list(&e.cos))
+    }
     pub fn measurement_scale(&self, page: usize, at: measure::Point) -> Result<measure::Scale, String> {
         let e = self.editor.as_ref().ok_or("the document can't be read")?;
         measure::scale_at(&e.cos, page, at).map_err(|e| e.to_string())
