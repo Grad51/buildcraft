@@ -44,7 +44,10 @@ pub fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                             widgets::brand_mark(ui, 28.0);
                             ui.vertical(|ui| {
                                 ui.label(egui::RichText::new("BuildCraft").font(theme::semibold(15.0)));
-                                ui.label(egui::RichText::new("Report issues and follow development on GitHub. BuildCraft is based on PdfCraft.").color(t.text_muted));
+                                ui.label(
+                                    egui::RichText::new("Report issues and follow development on GitHub. BuildCraft is based on PdfCraft.")
+                                        .color(t.text_muted),
+                                );
                             });
                             // Closed for this run only: the card is back on the next launch.
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Min), |ui| {

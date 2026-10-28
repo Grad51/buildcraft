@@ -559,16 +559,16 @@ pub fn progress_notice(app: &PdfCraftApp, ctx: &egui::Context) -> bool {
 /// ArtCraft mark, which forks must not ship (docs/brand/LICENSE-brand.txt upstream).
 pub fn brand_mark(ui: &mut egui::Ui, size: f32) -> Response {
     match brand_texture(ui.ctx()) {
-        Some(texture) => ui.add(
-            egui::Image::new(egui::load::SizedTexture::from_handle(&texture)).fit_to_exact_size(vec2(size, size)).alt_text("BuildCraft"),
-        ),
+        Some(texture) => {
+            ui.add(egui::Image::new(egui::load::SizedTexture::from_handle(&texture)).fit_to_exact_size(vec2(size, size)).alt_text("BuildCraft"))
+        }
         None => ui.label("BuildCraft"),
     }
 }
 
 /// The tiger icon decoded once per context and kept as a texture.
 fn brand_texture(ctx: &egui::Context) -> Option<egui::TextureHandle> {
-    let id = egui::Id::new("buildcraft-brand-mark");
+    let id = egui::Id::unique("buildcraft-brand-mark");
     if let Some(texture) = ctx.data(|d| d.get_temp::<egui::TextureHandle>(id)) {
         return Some(texture);
     }

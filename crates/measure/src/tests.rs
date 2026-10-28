@@ -461,3 +461,71 @@ fn a_stream_over_the_byte_budget_uses_it_up_once() {
     assert!(g.truncated);
     assert_eq!(g.segments.len(), 1, "the parts before it still snap");
 }
+#[test]
+fn feet_and_inches_scales_label_save_and_reopen() {
+    // 1/4" = 1'-0": a quarter inch (18 pt) on the sheet is one foot.
+    let quarter = imperial::preset("1/4\" = 1'-0\"").unwrap();
+    let scale = Scale::ratio([0.0, 0.0], [1.0, 0.0], quarter.page_inches, PageUnit::In, quarter.feet, "ft", 2).unwrap().with_feet_inches(16).unwrap();
+    assert_eq!(scale.ratio, "1/4\" = 1'-0\"", "named as the title block names it");
+    // 18 pt is 1 ft; 27.75 pt is 1'-6 1/2".
+    assert_eq!(reading(Kind::Distance, &[[0.0, 0.0], [27.75, 0.0]], &scale).unwrap().label, "1'-6 1/2\"");
+    let room = [[0.0, 0.0], [180.0, 0.0], [180.0, 216.0], [0.0, 216.0]];
+    let area = reading(Kind::Area, &room, &scale).unwrap();
+    assert_eq!(area.label, "120.00 ft^2", "10' x 12' room; areas stay decimal");
+    // The measure dictionary is the standard two-entry feet-then-inches form.
+    let dict = scale.dictionary().unwrap();
+    let x = dict.get(b"X").and_then(Object::as_array).unwrap();
+    assert_eq!(x.len(), 2);
+    assert_eq!(x[1].as_dict().unwrap().get(b"C").and_then(Object::as_f64), Some(12.0));
+    assert_eq!(x[1].as_dict().unwrap().name(b"F"), Some(&b"F"[..]));
+    assert_eq!(dict.get(b"A").and_then(Object::as_array).map(Vec::len), Some(1));
+    // Saved measurements and viewports read back as feet and inches.
+    let mut d = fixture("", "", &[]);
+    set_scale(&mut d, 0, [0.0, 0.0, 612.0, 792.0], "Floor plan", &scale).unwrap();
+    let mut m = new(Kind::Distance, vec![[10.0, 10.0], [37.75, 10.0]]);
+    m.scale = scale_at(&d, 0, [10.0, 10.0]).unwrap();
+    assert_eq!(m.scale, scale);
+    add(&mut d, &m, &Meta::default()).unwrap();
+    let reopened = Document::open(Arc::new(write_full(&d, &SaveOptions::default()).unwrap())).unwrap();
+    let listing = list(&reopened);
+    assert!(listing.unsupported.is_empty(), "{:?}", listing.unsupported);
+    assert_eq!(listing.measurements[0].reading.label, "1'-6 1/2\"");
+    assert_eq!(listing.measurements[0].scale.format, Format::FeetInches { fraction: 16 });
+    assert_eq!(scale_at(&reopened, 0, [5.0, 5.0]).unwrap(), scale);
+}
+#[test]
+fn feet_and_inches_needs_feet_and_a_known_fraction() {
+    let metres = Scale::new(2.0, "m", 2).unwrap();
+    assert!(metres.clone().with_feet_inches(16).is_err());
+    let feet = Scale::new(2.0, "ft", 2).unwrap();
+    for bad in [0, 3, 10, 128] {
+        assert!(feet.clone().with_feet_inches(bad).is_err(), "{bad}");
+    }
+    assert_eq!(feet.with_feet_inches(8).unwrap().format, Format::FeetInches { fraction: 8 });
+}
+#[test]
+fn imported_feet_and_inches_with_decimal_inches_round_to_whole_inches() {
+    let mut d = fixture("", "", &[]);
+    add(&mut d, &new(Kind::Distance, vec![[0.0, 0.0], [3.0, 4.0]]), &Meta::default()).unwrap();
+    let (r, _) = annot(&d, 0, 0).unwrap();
+    let format = |unit: &str, c: f64| {
+        let mut f = Dict::new();
+        f.set(b"Type".to_vec(), Object::name("NumberFormat"));
+        f.set(b"U".to_vec(), PdfString::text(unit));
+        f.set(b"C".to_vec(), Object::Real(c));
+        Object::Dict(f)
+    };
+    d.update_dict(r, |a| {
+        let mut m = Scale::default().dictionary().unwrap();
+        // 1 pt = 1/12 ft (1 in), written by another tool with decimal inches. D converts
+        // from X's unit, so its feet factor is 1.
+        m.set(b"X".to_vec(), Object::Array(vec![format("ft", 1.0 / 12.0), format("in", 12.0)]));
+        m.set(b"D".to_vec(), Object::Array(vec![format("ft", 1.0), format("in", 12.0)]));
+        a.set(b"Measure".to_vec(), Object::Dict(m));
+    })
+    .unwrap();
+    let listing = list(&d);
+    assert!(listing.unsupported.is_empty(), "{:?}", listing.unsupported);
+    // 5 pt at 1 in per pt.
+    assert_eq!(listing.measurements[0].reading.label, "0'-5\"");
+}

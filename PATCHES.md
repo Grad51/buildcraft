@@ -25,6 +25,7 @@ A fourth appearance, beside System, Light and Dark: slate-gray dark chrome, blue
 | `crates/ui-egui/src/menus.rs` | `view.theme.estimator` in the View menu, with its check mark |
 | `crates/ui-egui/src/app/control.rs` | Control channel accepts `theme=estimator` |
 | `crates/engine/src/commands.rs` | `view.theme.estimator` registered |
+| `crates/ui-egui/tests/it/theme.rs`, `theme_button.rs` | The title-bar cycle and the `theme` option include Estimator; dark-mode checks use `Tokens::dark()` |
 
 ## Branding
 
@@ -56,7 +57,21 @@ the settings and data folders (still `PdfCraft`), and the MCP server name.
 Still to do: `docs/images/` screenshots show the ArtCraft mark and need regenerating
 (`cargo xtask screenshots`).
 
+## Feet and inches (Milestone 1, step 2)
+
+Lengths in feet and inches (`1'-6 1/2"`) and the common architectural and engineering scales.
+The logic is in the new file `crates/measure/src/imperial.rs`; the rest are hooks.
+
+| File | Change |
+|---|---|
+| `crates/measure/src/lib.rs` | `Scale::format`; `dictionary()` writes feet-and-inches lengths, `read()` tries `imperial::read` first, `reading()` labels lengths with `length_label`, `ratio()` names title-block scales |
+| `crates/measure/src/tests.rs` | Three tests appended at the end |
+| `crates/measure/README.md` | The compound-units sentence |
+| `crates/automation/src/measure.rs`, `tools.rs` | `measure_scale` takes `feet_inches` (1 to 64) |
+| `crates/automation/tests/it/automation.rs` | One test appended at the end |
+| `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::feet_inches`; Imperial scale list, Feet and inches checkbox and fraction; `set_imperial`, `preset_of` and one test |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`.
+`.github/workflows/buildcraft-upstream-sync.yml`, `crates/measure/src/imperial.rs`.

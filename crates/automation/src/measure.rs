@@ -113,6 +113,13 @@ impl Automation {
             let [x, y] = self.doc(a)?.measurement_to_user(page, at).map_err(failed)?;
             return Ok(json!({"scale":self.doc(a)?.measurement_scale(page,[x,y]).map_err(failed)?}));
         };
+        // Feet and inches to the nearest 1/N inch (unit ft): 1'-6 1/2".
+        let scale = match a.opt_int("feet_inches")? {
+            Some(n) => {
+                scale.with_feet_inches(u8::try_from(n).map_err(|_| failed("feet_inches must be 1, 2, 4, 8, 16, 32 or 64"))?).map_err(failed)?
+            }
+            None => scale,
+        };
         let rect = a.nums::<4>("rect")?.unwrap_or([0.0, 0.0, f64::from(info.width), f64::from(info.height)]);
         if rect.iter().any(|v| v.abs() > 1e9) {
             return Err(failed("viewport coordinates must be within 1e9 points"));

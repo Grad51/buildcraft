@@ -9175,3 +9175,33 @@ fn page_render_draws_stamps_without_an_appearance() {
     let grey = custom.iter().filter(|p| p[0].abs_diff(p[1]) < 24 && p[1].abs_diff(p[2]) < 24).count();
     assert!(grey > 100 && grey == custom.len(), "an unknown name is a grey placeholder: {grey} of {}", custom.len());
 }
+
+#[test]
+fn measurement_scale_reads_feet_and_inches() {
+    // BuildCraft: 1/4" = 1'-0" with lengths in feet and inches to the nearest 1/16".
+    let dir = workdir("measurement-feet-inches");
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({"path":"a.pdf"}))["doc"].as_u64().unwrap();
+    let set =
+        ok(&mut a, "measure_scale", json!({"doc":doc,"page":1,"page_distance":0.25,"page_unit":"in","distance":1,"unit":"ft","feet_inches":16}));
+    assert_eq!(set["scale"]["format"], json!({"kind":"feet_inches","fraction":16}));
+    // 27.75 pt at 18 pt to the foot is 1'-6 1/2".
+    let info = ok(&mut a, "measure_info", json!({"doc":doc,"page":1,"points":[[20.0, 30.0], [47.75, 30.0]]}));
+    assert_eq!(info["reading"]["label"], "1'-6 1/2\"");
+    ok(&mut a, "measure_distance", json!({"doc":doc,"page":1,"points":[[20.0, 30.0], [47.75, 30.0]]}));
+    ok(&mut a, "doc_save", json!({"doc":doc,"path":"feet.pdf"}));
+    let reopened = ok(&mut a, "doc_open", json!({"path":"feet.pdf"}))["doc"].as_u64().unwrap();
+    let listed = ok(&mut a, "measure_list", json!({"doc":reopened}));
+    assert_eq!(listed["unsupported"], json!([]));
+    assert_eq!(listed["measurements"][0]["reading"]["label"], "1'-6 1/2\"");
+    let before = ok(&mut a, "doc_list", json!({}));
+    for args in [
+        json!({"doc":doc,"page":1,"page_distance":1,"distance":50,"unit":"mm","feet_inches":16}),
+        json!({"doc":doc,"page":1,"page_distance":0.25,"page_unit":"in","distance":1,"unit":"ft","feet_inches":3}),
+        json!({"doc":doc,"page":1,"page_distance":0.25,"page_unit":"in","distance":1,"unit":"ft","feet_inches":-16}),
+    ] {
+        assert!(a.call("measure_scale", &args).is_err(), "{args}");
+        assert_eq!(ok(&mut a, "doc_list", json!({})), before);
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
