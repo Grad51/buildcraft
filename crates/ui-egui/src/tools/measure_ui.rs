@@ -74,6 +74,8 @@ pub struct MeasureView {
     pub label: String,
     /// The Count tool's item, colour and totals.
     pub count: count::CountView,
+    /// The Markups list: breakdown for new takeoff, grouping, filter, selection (BuildCraft).
+    pub takeoff: crate::buildcraft::markups::MarkupsView,
     seeded_page: Option<usize>,
     /// Snapping geometry (or why it failed) per (page, edit generation): extraction is not
     /// repeated on every hover frame.
@@ -106,6 +108,7 @@ impl Default for MeasureView {
             rect: [0.0, 0.0, 100.0, 100.0],
             label: String::new(),
             count: Default::default(),
+            takeoff: Default::default(),
             seeded_page: None,
             paths: None,
             listing: None,
@@ -269,7 +272,7 @@ pub(crate) fn page_input(
         }
         hover = Some(point);
         if resp.clicked() && tool == Tool::Count {
-            state.error = count::click(&mut state.count, &mut view.pending_edit, page, point, author).err();
+            state.error = count::click(&mut state.count, &state.takeoff.breakdown, &mut view.pending_edit, page, point, author).err();
             return;
         }
         if resp.clicked() {
@@ -373,7 +376,7 @@ fn finish(state: &mut MeasureView, pending: &mut Option<Edit>, doc: &Document, p
         return;
     }
     if let Some(scale) = state.scale.clone() {
-        *pending = Some(Edit::AddMeasurement(NewMeasurement {
+        let m = NewMeasurement {
             page,
             kind: tool.kind(),
             points: state.points.clone(),
@@ -381,6 +384,11 @@ fn finish(state: &mut MeasureView, pending: &mut Option<Edit>, doc: &Document, p
             style: Style { color: [0.0, 0.47, 0.84], ..Style::default() },
             label: state.label.clone(),
             author: author.into(),
+        };
+        // BuildCraft: tagged with the Markups list's breakdown.
+        *pending = Some(Edit::AddTakeoff(measure::takeoff::NewTakeoff {
+            markup: measure::takeoff::Markup::Measurement(m),
+            breakdown: state.takeoff.breakdown.clone(),
         }));
         state.cancel();
     }
