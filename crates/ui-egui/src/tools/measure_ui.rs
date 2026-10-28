@@ -499,13 +499,15 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
                 None => state.error = Some(tl!("Enter a scale such as 1:50.").into()),
             }
         }
-        egui::ComboBox::from_id_salt("measure-common-scales").selected_text(tl!("Common scales")).width(20.0).show_ui(ui, |ui| {
+        let common = egui::ComboBox::from_id_salt("measure-common-scales").selected_text(tl!("Common scales")).width(20.0).show_ui(ui, |ui| {
             for n in RATIOS {
                 if ui.selectable_label(state.ratio_text == format_ratio(n), format_ratio(n)).clicked() {
                     chosen = Some(n);
                 }
             }
         });
+        // Named for assistive technology and tests (BuildCraft).
+        common.response.widget_info(|| egui::WidgetInfo::labeled(egui::Role::ComboBox, true, tl!("Common scales")));
     });
     // Architectural and engineering scales as title blocks print them: 1/4" = 1'-0".
     let mut imperial = None;
@@ -527,17 +529,20 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
         set_imperial(state, &p);
     }
     ui.horizontal(|ui| {
-        ui.add(egui::DragValue::new(&mut state.drawing_points).range(0.000001..=1e9));
+        // Named for assistive technology and tests (BuildCraft).
+        let named = |r: egui::Response, role: egui::Role, name: &str| r.widget_info(|| egui::WidgetInfo::labeled(role, true, name));
+        named(ui.add(egui::DragValue::new(&mut state.drawing_points).range(0.000001..=1e9)), egui::Role::SpinButton, tl!("Distance on the page"));
         let page_unit = page_unit_of(state.page_unit, &state.unit, units);
-        egui::ComboBox::from_id_salt("measure-page-unit").selected_text(page_unit.label()).width(44.0).show_ui(ui, |ui| {
+        let unit_combo = egui::ComboBox::from_id_salt("measure-page-unit").selected_text(page_unit.label()).width(44.0).show_ui(ui, |ui| {
             for u in PageUnit::ALL {
                 if ui.selectable_label(u == page_unit, u.label()).clicked() {
                     state.page_unit = Some(u);
                 }
             }
         });
+        named(unit_combo.response, egui::Role::ComboBox, tl!("Page unit"));
         ui.label("=");
-        ui.add(egui::DragValue::new(&mut state.real_distance).range(0.000001..=1e12));
+        named(ui.add(egui::DragValue::new(&mut state.real_distance).range(0.000001..=1e12)), egui::Role::SpinButton, tl!("Real distance"));
     });
     ui.horizontal(|ui| {
         let unit = ui.label(tl!("Unit"));

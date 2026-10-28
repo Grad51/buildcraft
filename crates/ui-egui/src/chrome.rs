@@ -489,7 +489,13 @@ pub fn mode_bar(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 }
                 // Acrobat's mode bar has no Read tab: reading is what the viewer does with no tool
                 // in use. Read mode (the panes hidden) stays a View command and a default workspace.
-                for (mode, label) in [(Mode::AllTools, "All tools"), (Mode::Edit, "Edit"), (Mode::Convert, "Convert"), (Mode::Sign, "E-Sign")] {
+                for (mode, label) in [
+                    (Mode::Takeoff, "Takeoff"),
+                    (Mode::AllTools, "All tools"),
+                    (Mode::Edit, "Edit"),
+                    (Mode::Convert, "Convert"),
+                    (Mode::Sign, "E-Sign"),
+                ] {
                     if widgets::mode_tab(ui, tl!(label), app.mode == mode).clicked() {
                         app.switch_mode(mode, true);
                     }

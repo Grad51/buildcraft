@@ -579,6 +579,8 @@ impl eframe::App for PdfCraftApp {
         if self.all_tools_full && self.all_tools_tab != self.shown_tab() {
             self.all_tools_full = false;
         }
+        // BuildCraft's status bar, before the side panels so it spans the window's width.
+        crate::buildcraft::status_bar::show(self, ui);
         side_panels::show(self, ui);
         let t = theme::Tokens::get(&ctx);
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
