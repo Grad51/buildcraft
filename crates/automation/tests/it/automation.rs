@@ -9205,3 +9205,36 @@ fn measurement_scale_reads_feet_and_inches() {
     }
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn counts_add_up_per_item_undo_and_survive_saving() {
+    // BuildCraft: click-to-count markers and their totals.
+    let dir = workdir("counts");
+    let mut a = auto(&dir);
+    let doc = ok(&mut a, "doc_open", json!({"path":"a.pdf"}))["doc"].as_u64().unwrap();
+    for (at, item) in [([50.0, 60.0], "Duplex receptacle"), ([90.0, 60.0], "Duplex receptacle"), ([130.0, 60.0], "Switch")] {
+        ok(&mut a, "count_add", json!({"doc":doc,"page":1,"at":at,"item":item}));
+    }
+    let listed = ok(&mut a, "count_list", json!({"doc":doc}));
+    assert_eq!(listed["totals"], json!([{"item":"Duplex receptacle","count":2,"pages":{"1":2}},{"item":"Switch","count":1,"pages":{"1":1}}]));
+    let at = &listed["markers"][1]["at"];
+    assert!((at[0].as_f64().unwrap() - 90.0).abs() < 1e-6 && (at[1].as_f64().unwrap() - 60.0).abs() < 1e-6, "{at}");
+    ok(&mut a, "edit_undo", json!({"doc":doc}));
+    assert_eq!(ok(&mut a, "count_list", json!({"doc":doc,"item":"Switch"}))["totals"], json!([]));
+    ok(&mut a, "edit_redo", json!({"doc":doc}));
+    ok(&mut a, "doc_save", json!({"doc":doc,"path":"counted.pdf"}));
+    let reopened = ok(&mut a, "doc_open", json!({"path":"counted.pdf"}))["doc"].as_u64().unwrap();
+    assert_eq!(ok(&mut a, "count_list", json!({"doc":reopened,"item":"Duplex receptacle"}))["totals"][0]["count"], 2);
+    let before = ok(&mut a, "doc_list", json!({}));
+    for args in [
+        json!({"doc":doc,"page":1,"at":[10,10],"item":"   "}),
+        json!({"doc":doc,"page":1,"at":[10,10],"item":"X","size":500}),
+        json!({"doc":doc,"page":1,"at":[10,10],"item":"X","color":[1,0]}),
+        json!({"doc":doc,"page":9,"at":[10,10],"item":"X"}),
+        json!({"doc":doc,"page":1,"item":"X"}),
+    ] {
+        assert!(a.call("count_add", &args).is_err(), "{args}");
+        assert_eq!(ok(&mut a, "doc_list", json!({})), before);
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}

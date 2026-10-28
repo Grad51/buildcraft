@@ -529,3 +529,75 @@ fn imported_feet_and_inches_with_decimal_inches_round_to_whole_inches() {
     // 5 pt at 1 in per pt.
     assert_eq!(listing.measurements[0].reading.label, "0'-5\"");
 }
+#[test]
+fn counts_total_per_item_and_page_and_survive_saving() {
+    let mut d = Document::open(Arc::new(
+        Pdf::new()
+            .obj("<< /Type /Catalog /Pages 2 0 R >>")
+            .obj("<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 612 792] >>")
+            .obj("<< /Type /Page /Parent 2 0 R >>")
+            .obj("<< /Type /Page /Parent 2 0 R >>")
+            .build(),
+    ))
+    .unwrap();
+    let mark =
+        |page: usize, at: Point, item: &str| count::NewCount { page, at, item: item.into(), color: [0.9, 0.1, 0.1], size: 10.0, author: "J".into() };
+    for (page, at, item) in [
+        (0, [100.0, 100.0], "Duplex receptacle"),
+        (0, [150.0, 100.0], " Duplex receptacle "),
+        (0, [200.0, 100.0], "Fixture A"),
+        (1, [100.0, 300.0], "Duplex receptacle"),
+    ] {
+        count::add(&mut d, &mark(page, at, item), &Meta::default()).unwrap();
+    }
+    // An ordinary measurement and a plain comment are not counted.
+    add(&mut d, &new(Kind::Distance, vec![[0.0, 0.0], [3.0, 4.0]]), &Meta::default()).unwrap();
+    let reopened = Document::open(Arc::new(write_full(&d, &SaveOptions::default()).unwrap())).unwrap();
+    let listing = count::list(&reopened);
+    assert!(!listing.truncated);
+    assert_eq!(listing.markers.len(), 4);
+    close(listing.markers[1].at[0], 150.0);
+    close(listing.markers[1].at[1], 100.0);
+    let totals: Vec<_> = listing.totals.iter().map(|t| (t.item.as_str(), t.count, t.pages.clone())).collect();
+    assert_eq!(
+        totals,
+        vec![("Duplex receptacle", 3, [(0, 2), (1, 1)].into_iter().collect()), ("Fixture A", 1, [(0, 1)].into_iter().collect())],
+        "names are trimmed; items in name order"
+    );
+    // The marker is a standard filled circle that shows the item as its comment.
+    let (_, dict) = annot(&reopened, 0, 2).unwrap();
+    assert_eq!(dict.name(b"Subtype"), Some(&b"Circle"[..]));
+    assert_eq!(text(&dict, b"Contents"), "Fixture A");
+    assert_eq!(text(&dict, b"Subj"), "Fixture A");
+    assert!(dict.get(b"IC").is_some(), "filled");
+    assert_eq!(listing.markers[2].color, Some([0.9, 0.1, 0.1]));
+    assert!(list(&reopened).unsupported.is_empty(), "markers are not measurements");
+    assert_eq!(list(&reopened).measurements.len(), 1);
+    assert_eq!(count::csv(&listing.totals), "Item,Count,Pages\r\n\"Duplex receptacle\",3,\"1:2; 2:1\"\r\n\"Fixture A\",1,\"1:1\"\r\n");
+}
+#[test]
+fn count_markers_refuse_bad_input() {
+    let mut d = fixture("", "", &[]);
+    let good = count::NewCount { page: 0, at: [10.0, 10.0], item: "Switch".into(), color: [0.0, 0.0, 1.0], size: 8.0, author: String::new() };
+    for bad in [
+        count::NewCount { item: "   ".into(), ..good.clone() },
+        count::NewCount { item: "x".repeat(129), ..good.clone() },
+        count::NewCount { item: "a\nb".into(), ..good.clone() },
+        count::NewCount { size: 0.0, ..good.clone() },
+        count::NewCount { size: f64::NAN, ..good.clone() },
+        count::NewCount { color: [2.0, 0.0, 0.0], ..good.clone() },
+        count::NewCount { at: [f64::INFINITY, 0.0], ..good.clone() },
+        count::NewCount { page: 9, ..good.clone() },
+    ] {
+        assert!(count::add(&mut d, &bad, &Meta::default()).is_err(), "{bad:?}");
+    }
+    assert!(count::list(&d).markers.is_empty());
+    count::add(&mut d, &good, &Meta::default()).unwrap();
+    assert_eq!(count::list(&d).totals[0].count, 1);
+}
+#[test]
+fn count_csv_blocks_formula_cells() {
+    let totals =
+        count::totals(&[count::Marker { page: 0, index: 0, id: String::new(), item: "=HYPERLINK(\"x\")".into(), at: [0.0, 0.0], color: None }]);
+    assert_eq!(count::csv(&totals), "Item,Count,Pages\r\n\"'=HYPERLINK(\"\"x\"\")\",1,\"1:1\"\r\n");
+}

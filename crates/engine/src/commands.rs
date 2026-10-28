@@ -172,6 +172,7 @@ pub const COMMANDS: &[CommandSpec] = &[
     c("measure.distance", "Measure distance", None, None, Annotate, "ruler"),
     c("measure.perimeter", "Measure perimeter", None, None, Annotate, "ruler"),
     c("measure.area", "Measure area", None, None, Annotate, "ruler"),
+    c("measure.count", "Count items", None, None, Annotate, "hash"),
     c("measure.scale", "Set measurement scale", None, None, Annotate, "ruler"),
     c("measure.info", "Measurement information", None, None, Document, "ruler"),
     c("measure.snap", "Measurement snapping", None, None, Document, "ruler"),

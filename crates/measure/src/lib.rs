@@ -3,6 +3,7 @@
 //! annotations use the measurement intents of line, polygon and polyline annotations (§12.5.6).
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
 
+pub mod count;
 pub mod imperial;
 pub mod snap;
 pub use imperial::Format;

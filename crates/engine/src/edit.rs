@@ -132,6 +132,8 @@ pub enum Edit {
     },
     /// Add a calibrated distance, perimeter or area annotation.
     AddMeasurement(measure::NewMeasurement),
+    /// Place a count marker (BuildCraft).
+    AddCount(measure::count::NewCount),
     /// Store a drawing scale for a rectangular viewport (PDF user space).
     SetMeasurementScale {
         page: usize,

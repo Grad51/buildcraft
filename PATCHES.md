@@ -71,7 +71,26 @@ The logic is in the new file `crates/measure/src/imperial.rs`; the rest are hook
 | `crates/automation/tests/it/automation.rs` | One test appended at the end |
 | `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::feet_inches`; Imperial scale list, Feet and inches checkbox and fraction; `set_imperial`, `preset_of` and one test |
 
+## Count tool (Milestone 1, step 3)
+
+Click-to-count markers with totals per item. The logic is in new files
+(`crates/measure/src/count.rs`, `crates/automation/src/count.rs`,
+`crates/ui-egui/src/tools/measure_ui/count.rs`, `crates/ui-egui/tests/it/count.rs`); the rest are hooks.
+
+| File | Change |
+|---|---|
+| `crates/measure/src/lib.rs` | `pub mod count;` |
+| `crates/measure/src/tests.rs` | Three tests appended at the end |
+| `crates/measure/README.md` | A paragraph on counts |
+| `crates/engine/src/edit.rs`, `edit/run.rs`, `edit/labels.rs` | `Edit::AddCount`: permission, run, "Add count" label |
+| `crates/engine/src/document.rs` | `Document::counts()` |
+| `crates/engine/src/commands.rs`, `catalog.rs` | `measure.count` command and the Count item under Measure objects |
+| `crates/automation/src/lib.rs`, `dispatch.rs`, `tools.rs` | `count_add` and `count_list` tools |
+| `crates/automation/tests/it/automation.rs` | One test appended at the end |
+| `crates/ui-egui/src/tools/measure_ui.rs` | `Tool::Count`, `MeasureView::count`, the Count tab (tighter tab spacing), the click hook, the counting panel and totals |
+| `crates/ui-egui/tests/it/main.rs` | `mod count;` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`, `crates/measure/src/imperial.rs`.
+`.github/workflows/buildcraft-upstream-sync.yml`, `crates/measure/src/imperial.rs`, the count files above.
