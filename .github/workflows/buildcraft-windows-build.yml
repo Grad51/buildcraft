@@ -1,7 +1,7 @@
 # BuildCraft: build Windows x64 after every merge to main and publish it on the Releases page, so
-# the latest build can be downloaded and run without building it locally. Uses PdfCraft's own
-# packaging script (packaging/windows/package.ps1), so the zip has the same layout, notices and
-# OCR models as a PdfCraft release. Unsigned: there are no signing secrets on this fork.
+# the latest build can be downloaded and run without building it locally. Builds as PdfCraft's
+# packaging/windows/package.ps1 does and lays the zip out like its portable zip; no MSI. Unsigned:
+# there are no signing secrets on this fork.
 name: Windows build
 
 on:
@@ -33,18 +33,45 @@ jobs:
           rustup toolchain install stable --profile minimal --no-self-update
           rustup default stable
           rustc --version
-      - name: Install WiX (package.ps1 also builds an MSI)
-        run: dotnet tool install --global wix --version 5.0.2
       - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
         with:
           key: buildcraft-windows-release
-      - name: Build and package
+      # As packaging/windows/package.ps1 builds: static C runtime (no VC++ redistributable), and
+      # the icon and version info must embed. Its MSI and signing steps are left out.
+      - name: Build
         shell: pwsh
-        env:
-          DIST: dist
         run: |
+          $env:CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS = '-C target-feature=+crt-static'
+          $env:PDFCRAFT_REQUIRE_WINRES = '1'
           $env:PDFCRAFT_BUILD_SHA = '${{ github.sha }}'
-          pwsh packaging/windows/package.ps1 -Arch x64
+          cargo build --release --locked -p pdfcraft -p pdfcraft-cli --target x86_64-pc-windows-msvc
+          if ($LASTEXITCODE -ne 0) { throw "cargo build failed" }
+      # The OCR models come from third-party hosts that are sometimes unreachable; a build without
+      # them still runs, with OCR unavailable until they are added.
+      - name: OCR models (best effort)
+        id: models
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          cargo xtask models stage/models
+          if ($LASTEXITCODE -ne 0) { throw "cargo xtask models failed" }
+      - name: Package
+        shell: pwsh
+        run: |
+          $bin = 'target/x86_64-pc-windows-msvc/release'
+          New-Item -ItemType Directory -Force -Path stage | Out-Null
+          Copy-Item "$bin/pdfcraft.exe", "$bin/pdfcraft-cli.exe" stage
+          Copy-Item LICENSE-MIT, LICENSE-APACHE, NOTICE, README.md, PATCHES.md stage
+          Copy-Item assets/app-icon/LICENSE-document.txt stage
+          Copy-Item packaging/windows/portable.txt stage
+          if ('${{ steps.models.outcome }}' -ne 'success') {
+            Remove-Item -Recurse -Force stage/models -ErrorAction SilentlyContinue
+          } else {
+            Remove-Item -Force stage/models/*.part -ErrorAction SilentlyContinue
+          }
+          & stage/pdfcraft-cli.exe --version
+          if ($LASTEXITCODE -ne 0) { throw "pdfcraft-cli --version failed" }
+          Compress-Archive -Path stage/* -DestinationPath buildcraft.zip
       - name: Publish on the Releases page
         shell: pwsh
         env:
@@ -53,16 +80,18 @@ jobs:
           $date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
           $sha = '${{ github.sha }}'.Substring(0, 7)
           $tag = "build-$date-$sha"
-          $zip = Get-ChildItem dist/*-portable.zip | Select-Object -First 1
           $asset = "BuildCraft-$date-$sha-windows-x64-portable.zip"
-          Copy-Item $zip.FullName $asset
+          Copy-Item buildcraft.zip $asset
+          $ocr = if ('${{ steps.models.outcome }}' -eq 'success') { 'OCR models included.' } else { 'OCR models could not be downloaded for this build, so OCR is unavailable in it.' }
           $subject = git log -1 --format=%s
           $notes = @(
             "Built from ``$sha`` on main: $subject",
             '',
             "Download **$asset**, unzip it anywhere and run ``pdfcraft.exe``. It runs in portable mode:",
             'settings stay in the PdfCraftData folder beside it. Windows SmartScreen may warn that the app',
-            'is unrecognised because the build is unsigned; choose More info > Run anyway.'
+            'is unrecognised because the build is unsigned; choose More info > Run anyway.',
+            '',
+            $ocr
           ) -join "`n"
           gh release create $tag $asset --target '${{ github.sha }}' --title "BuildCraft $date ($sha)" --notes $notes --latest
           if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }
