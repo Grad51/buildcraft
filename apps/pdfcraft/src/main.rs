@@ -404,6 +404,8 @@ fn app_creator<'a>(
     Box::new(move |cc| {
         started.set(true);
         let mut app = PdfCraftApp::new();
+        // BuildCraft: drawings open in the Takeoff workspace unless a saved preference says otherwise.
+        app.default_mode = pdfcraft_ui_egui::Mode::Takeoff;
         // First start (or settings from before Units existed): the region's unit.
         app.units = pdfcraft_ui_egui::units::Unit::system();
         #[cfg(target_os = "linux")]

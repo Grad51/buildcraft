@@ -66,7 +66,7 @@ impl PdfCraftApp {
                 }
             }
             ("default-mode", _) => {
-                self.default_mode = Mode::parse(value).ok_or("default-mode must be all, read, edit, convert or sign")?;
+                self.default_mode = Mode::parse(value).ok_or("default-mode must be takeoff, all, read, edit, convert or sign")?;
             }
             ("date-format", _) => self.session.set_date_format(value)?,
             ("date-language", _) => self.session.set_date_language(Some(value).filter(|v| *v != "auto"))?,

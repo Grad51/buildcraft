@@ -90,7 +90,25 @@ Click-to-count markers with totals per item. The logic is in new files
 | `crates/ui-egui/src/tools/measure_ui.rs` | `Tool::Count`, `MeasureView::count`, the Count tab (tighter tab spacing), the click hook, the counting panel and totals |
 | `crates/ui-egui/tests/it/main.rs` | `mod count;` |
 
+## Takeoff workspace and status bar (Interface plan, phase 1)
+
+A Takeoff mode tab (the default workspace for drawings) that opens the measuring panel, and a
+status bar in it. The bar is in the new file `crates/ui-egui/src/buildcraft/status_bar.rs`.
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/state.rs` | `Mode::Takeoff` (`takeoff`) |
+| `crates/ui-egui/src/chrome.rs` | Takeoff first in the mode bar |
+| `crates/ui-egui/src/app/commands.rs`, `panels/organize_panel.rs` | Takeoff's panel is Measure objects |
+| `crates/ui-egui/src/app.rs` | The status bar is drawn before the side panels |
+| `crates/ui-egui/src/lib.rs` | `mod buildcraft;` |
+| `crates/ui-egui/src/workflows/js_ui.rs` | Takeoff in Preferences' default workspace |
+| `crates/ui-egui/src/app/control.rs` | `default-mode` accepts `takeoff` |
+| `apps/pdfcraft/src/main.rs` | The app's default workspace is Takeoff (a saved preference wins); `PdfCraftApp::new()` keeps All tools so upstream tests are unchanged |
+| `crates/ui-egui/src/tools/measure_ui.rs` | Accessible names for the scale fields |
+| `crates/ui-egui/tests/it/main.rs` | `mod takeoff;` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, the count files above.
+`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, the count files above, `crates/ui-egui/src/buildcraft.rs` and `buildcraft/`.

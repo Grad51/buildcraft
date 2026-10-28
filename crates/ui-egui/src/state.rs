@@ -6,6 +6,8 @@ use super::*;
 pub enum Mode {
     #[serde(rename = "all")]
     AllTools,
+    /// BuildCraft's takeoff workspace: the measuring tools on the left, the default for drawings.
+    Takeoff,
     Read,
     Edit,
     Convert,
@@ -16,6 +18,7 @@ impl Mode {
     pub(crate) fn parse(value: &str) -> Option<Self> {
         match value {
             "all" => Some(Self::AllTools),
+            "takeoff" => Some(Self::Takeoff),
             "read" => Some(Self::Read),
             "edit" => Some(Self::Edit),
             "convert" => Some(Self::Convert),

@@ -81,6 +81,7 @@ impl PdfCraftApp {
             view.organize = false;
         }
         self.left = match mode {
+            Mode::Takeoff => LeftPanel::Tool("measure"),
             Mode::Edit => LeftPanel::Tool("edit"),
             Mode::Convert => LeftPanel::Tool("export"),
             Mode::Sign => LeftPanel::Tool("fill_sign"),
