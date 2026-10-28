@@ -1,0 +1,68 @@
+# BuildCraft: build Windows x64 after every merge to main and publish it on the Releases page, so
+# the latest build can be downloaded and run without building it locally. Uses PdfCraft's own
+# packaging script (packaging/windows/package.ps1), so the zip has the same layout, notices and
+# OCR models as a PdfCraft release. Unsigned: there are no signing secrets on this fork.
+name: Windows build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# A newer merge supersedes a build still running for an older one.
+concurrency:
+  group: buildcraft-windows-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.repository == 'Grad51/buildcraft'
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # The same toolchain as the CI gate: current stable.
+      - name: Install Rust
+        shell: bash
+        run: |
+          rustup toolchain install stable --profile minimal --no-self-update
+          rustup default stable
+          rustc --version
+      - name: Install WiX (package.ps1 also builds an MSI)
+        run: dotnet tool install --global wix --version 5.0.2
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0
+        with:
+          key: buildcraft-windows-release
+      - name: Build and package
+        shell: pwsh
+        env:
+          DIST: dist
+        run: |
+          $env:PDFCRAFT_BUILD_SHA = '${{ github.sha }}'
+          pwsh packaging/windows/package.ps1 -Arch x64
+      - name: Publish on the Releases page
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $date = (Get-Date).ToUniversalTime().ToString('yyyy-MM-dd')
+          $sha = '${{ github.sha }}'.Substring(0, 7)
+          $tag = "build-$date-$sha"
+          $zip = Get-ChildItem dist/*-portable.zip | Select-Object -First 1
+          $asset = "BuildCraft-$date-$sha-windows-x64-portable.zip"
+          Copy-Item $zip.FullName $asset
+          $subject = git log -1 --format=%s
+          $notes = @(
+            "Built from ``$sha`` on main: $subject",
+            '',
+            "Download **$asset**, unzip it anywhere and run ``pdfcraft.exe``. It runs in portable mode:",
+            'settings stay in the PdfCraftData folder beside it. Windows SmartScreen may warn that the app',
+            'is unrecognised because the build is unsigned; choose More info > Run anyway.'
+          ) -join "`n"
+          gh release create $tag $asset --target '${{ github.sha }}' --title "BuildCraft $date ($sha)" --notes $notes --latest
+          if ($LASTEXITCODE -ne 0) { throw "gh release create failed" }

@@ -93,4 +93,4 @@ Click-to-count markers with totals per item. The logic is in new files
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`, `crates/measure/src/imperial.rs`, the count files above.
+`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, the count files above.
