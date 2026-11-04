@@ -77,6 +77,7 @@ mod takeoff;
 mod text_select;
 mod theme;
 mod theme_button;
+mod tool_chest;
 mod trust_signer;
 mod ui;
 mod updates;
