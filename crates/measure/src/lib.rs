@@ -6,6 +6,7 @@
 pub mod count;
 pub mod imperial;
 pub mod snap;
+pub mod takeoff;
 pub use imperial::Format;
 use pdfcraft_annot::{Meta, NewAnnotation, Shape, Style};
 use pdfcraft_cos::{Dict, Document, ObjRef, Object, PdfString};

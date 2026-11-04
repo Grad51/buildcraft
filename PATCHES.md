@@ -82,7 +82,7 @@ Click-to-count markers with totals per item. The logic is in new files
 | `crates/measure/src/lib.rs` | `pub mod count;` |
 | `crates/measure/src/tests.rs` | Three tests appended at the end |
 | `crates/measure/README.md` | A paragraph on counts |
-| `crates/engine/src/edit.rs`, `edit/run.rs`, `edit/labels.rs` | `Edit::AddCount`: permission, run, "Add count" label |
+| `crates/engine/src/edit.rs`, `edit/run.rs`, `edit/labels.rs` | Count markers are added with `Edit::AddTakeoff` (see the Markups list below) |
 | `crates/engine/src/document.rs` | `Document::counts()` |
 | `crates/engine/src/commands.rs`, `catalog.rs` | `measure.count` command and the Count item under Measure objects |
 | `crates/automation/src/lib.rs`, `dispatch.rs`, `tools.rs` | `count_add` and `count_list` tools |
@@ -108,7 +108,29 @@ status bar in it. The bar is in the new file `crates/ui-egui/src/buildcraft/stat
 | `crates/ui-egui/src/tools/measure_ui.rs` | Accessible names for the scale fields |
 | `crates/ui-egui/tests/it/main.rs` | `mod takeoff;` |
 
+## Markups list with breakdowns (Interface plan, phase 2)
+
+Every measurement and count as one table along the foot of the Takeoff workspace, tagged with
+building, floor, area, system and bid item (a `/BCBreakdown` dictionary on the annotation),
+grouped with subtotals and exported as CSV. The logic is in new files
+(`crates/measure/src/takeoff.rs`, `crates/ui-egui/src/buildcraft/markups.rs`,
+`crates/ui-egui/tests/it/markups.rs`); the rest are hooks.
+
+| File | Change |
+|---|---|
+| `crates/measure/src/lib.rs` | `pub mod takeoff;` |
+| `crates/measure/src/tests.rs` | Three tests appended at the end |
+| `crates/engine/src/edit.rs`, `edit/run.rs`, `edit/labels.rs` | `Edit::AddTakeoff` (a measurement or count with its breakdown; replaces `AddCount`) and `Edit::SetBreakdown`: permission, run, labels |
+| `crates/engine/src/history.rs` | Both edits are comment-scoped for undo |
+| `crates/engine/src/document.rs` | `Document::takeoff_rows()` |
+| `crates/automation/src/count.rs`, `dispatch.rs`, `tools.rs` | `takeoff_list` and `takeoff_breakdown` tools; `count_add` takes the breakdown fields |
+| `crates/automation/tests/it/automation.rs` | One test appended at the end |
+| `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::takeoff`; new measurements are added with `Edit::AddTakeoff` and the list's breakdown |
+| `crates/ui-egui/src/tools/measure_ui/count.rs` | New counts carry the list's breakdown |
+| `crates/ui-egui/src/app.rs` | The Markups list is drawn after the status bar |
+| `crates/ui-egui/tests/it/main.rs` | `mod markups;` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, the count files above, `crates/ui-egui/src/buildcraft.rs` and `buildcraft/`.
+`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, `crates/measure/src/takeoff.rs`, the count files above, `crates/ui-egui/src/buildcraft.rs` and `buildcraft/`.

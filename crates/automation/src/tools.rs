@@ -42,6 +42,10 @@ fn point() -> Value {
     json!({ "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2, "description": "[x, y] in points from the top-left of the displayed page." })
 }
 
+/// A takeoff breakdown value (BuildCraft).
+fn breakdown_value() -> Value {
+    json!({"type":"string","maxLength":128})
+}
 fn measure_points() -> Value {
     json!({"type":"array","items":point(),"minItems":1,"maxItems":2048})
 }
@@ -693,10 +697,14 @@ pub fn tools() -> Vec<ToolDef> {
             .cmd("measure.perimeter").with(measure_schema()),
         t("measure_area", "Measure area", "Add an undoable area annotation from a simple polygon. The last edge closes automatically.")
             .cmd("measure.area").with(measure_schema()),
-        t("count_add", "Add a count marker", "Place an undoable count marker (a filled circle) at a point, counting one of item. Markers with the same item add up; count_list reports the totals. color is [r, g, b] from 0 to 1 (default red); size is the diameter in points (default 10).")
-            .cmd("measure.count").with(schema(json!({"doc":doc(),"page":{"type":"integer","minimum":1},"at":point(),"item":{"type":"string","minLength":1,"maxLength":128},"color":{"type":"array","items":{"type":"number","minimum":0,"maximum":1},"minItems":3,"maxItems":3},"size":{"type":"number","minimum":2,"maximum":72},"author":{"type":"string"}}), &["doc","page","at","item"])),
+        t("count_add", "Add a count marker", "Place an undoable count marker (a filled circle) at a point, counting one of item. Markers with the same item add up; count_list reports the totals. Optional building, floor, area, system and bid_item tag it for takeoff_list. color is [r, g, b] from 0 to 1 (default red); size is the diameter in points (default 10).")
+            .cmd("measure.count").with(schema(json!({"doc":doc(),"page":{"type":"integer","minimum":1},"at":point(),"item":{"type":"string","minLength":1,"maxLength":128},"color":{"type":"array","items":{"type":"number","minimum":0,"maximum":1},"minItems":3,"maxItems":3},"size":{"type":"number","minimum":2,"maximum":72},"author":{"type":"string"},"building":breakdown_value(),"floor":breakdown_value(),"area":breakdown_value(),"system":breakdown_value(),"bid_item":breakdown_value()}), &["doc","page","at","item"])),
         t("count_list", "List counts", "Count markers and their totals per item, overall and per page (pages 1-based), items in name order. Optionally only one item.")
             .ro().with(schema(json!({"doc":doc(),"item":{"type":"string"}}), &["doc"])),
+        t("takeoff_list", "List takeoff", "Every measurement and count marker as one list in page order, with its type (length, perimeter, area, count), item (a count's item, a measurement's label), value, unit, quantity as drawn and breakdown (building, floor, area, system, bid_item; empty when unassigned). Pages and indexes are 1-based. With group_by, also groups in name order (unassigned last) with their rows (1-based positions in rows) and totals per unit.")
+            .ro().with(schema(json!({"doc":doc(),"group_by":{"type":"string","enum":["item","building","floor","area","system","bid_item"]}}), &["doc"])),
+        t("takeoff_breakdown", "Set takeoff breakdown", "Set building, floor, area, system or bid_item on measurements and count markers, given as markups [[page, index], ...] (1-based, as takeoff_list reports them). Fields left out are kept; an empty string clears one. Nothing changes if any markup is not a measurement or count. Undoable.")
+            .with(schema(json!({"doc":doc(),"markups":{"type":"array","items":{"type":"array","items":{"type":"integer","minimum":1},"minItems":2,"maxItems":2},"minItems":1,"maxItems":10000},"building":breakdown_value(),"floor":breakdown_value(),"area":breakdown_value(),"system":breakdown_value(),"bid_item":breakdown_value()}), &["doc","markups"])),
         t("measure_info", "Read a measurement", "Calculate a live distance, perimeter or area, deltas, angle and scale without adding an annotation. Incomplete paths are allowed.")
             .ro().cmd("measure.info").with(schema(json!({"doc":doc(),"page":{"type":"integer","minimum":1},"points":measure_points(),"type":{"type":"string","enum":["distance","perimeter","area"]}}), &["doc","page","points"])),
         t("measure_list", "List measurements", "Saved measurement annotations with calculated values, scale and vertices in display coordinates. Measurements with unsupported imported formats (compound or fractional units, non-rectilinear scales) or invalid geometry are listed under unsupported with a reason.")

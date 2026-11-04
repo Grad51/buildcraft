@@ -30,7 +30,8 @@ pub(crate) fn check_permission(edit: &Edit, p: &pdfcraft_cos::Permissions) -> Re
             }
         }
         Edit::AddMeasurement(_)
-        | Edit::AddCount(_)
+        | Edit::AddTakeoff(_)
+        | Edit::SetBreakdown { .. }
         | Edit::AddAnnotation(_)
         | Edit::AddCustomStamp { .. }
         | Edit::DeleteAnnotation { .. }
@@ -286,9 +287,10 @@ pub(crate) fn run_edit(doc: &mut pdfcraft_cos::Document, edit: &Edit, cx: &mut E
         Edit::AddMeasurement(m) => {
             measure::add(doc, m, &cx.meta())?;
         }
-        Edit::AddCount(c) => {
-            measure::count::add(doc, c, &cx.meta())?;
+        Edit::AddTakeoff(t) => {
+            measure::takeoff::add(doc, t, &cx.meta())?;
         }
+        Edit::SetBreakdown { targets, patch } => measure::takeoff::set_breakdown(doc, targets, patch)?,
         Edit::SetMeasurementScale { page, bbox, name, scale } => measure::set_scale(doc, *page, *bbox, name, scale)?,
         Edit::AddAnnotation(a) => {
             pdfcraft_annot::add_annotation(doc, a, &cx.meta())?;

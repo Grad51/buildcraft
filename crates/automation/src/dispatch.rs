@@ -681,6 +681,8 @@ impl Automation {
             "measure_list" => self.measurement_list(&a)?,
             "count_add" => self.count_add(&a)?,
             "count_list" => self.count_list(&a)?,
+            "takeoff_list" => self.takeoff_list(&a)?,
+            "takeoff_breakdown" => self.takeoff_breakdown(&a)?,
             "measure_scale" => self.measurement_scale(&a)?,
             "measure_snap" => self.measurement_snap(&a)?,
             "measure_export" => self.measurement_export(&a)?,
