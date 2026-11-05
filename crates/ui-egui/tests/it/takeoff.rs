@@ -1,4 +1,4 @@
-//! The Takeoff workspace (BuildCraft): its mode tab, measuring panel and status bar.
+//! The Takeoff workspace (BuildCraft): its mode tab, toolbar, measuring tab and status bar.
 
 use egui_kittest::Harness;
 use egui_kittest::kittest::Queryable;
@@ -24,7 +24,9 @@ fn the_takeoff_tab_opens_the_measuring_panel_and_the_status_bar() {
     h.run_steps(4);
     assert_eq!(h.state().mode, Mode::Takeoff);
     assert_eq!(h.state().left, LeftPanel::Tool("measure"));
-    h.get_by_label("Distance");
+    // Its tools are in the toolbar and the Tool Chest; measuring controls are the Measure tab.
+    h.get_by_label("Measure length");
+    h.get_by_label("Tool Chest");
     h.get_by_label_contains("Page 1 / ");
     h.get_by_label("Scale: No scale set");
     h.get_by_label_contains("Select: click a markup");
@@ -69,4 +71,5 @@ fn a_scale_set_on_the_page_shows_as_the_title_block_writes_it() {
     h.get_by_label("Scale: 1/4\" = 1'-0\"").click();
     h.run_steps(3);
     assert_eq!(h.state().left, LeftPanel::Tool("measure"), "the scale opens the drawing-scale controls");
+    h.get_by_label("Distance");
 }

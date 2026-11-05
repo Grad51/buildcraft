@@ -72,6 +72,9 @@ pub struct MeasureView {
     pub whole_page: bool,
     pub rect: [f64; 4],
     pub label: String,
+    /// The style new measurements are drawn in; `None` is the usual blue (BuildCraft: a Tool
+    /// Chest tool sets it).
+    pub style: Option<Style>,
     /// The Count tool's item, colour and totals.
     pub count: count::CountView,
     /// The Markups list: breakdown for new takeoff, grouping, filter, selection (BuildCraft).
@@ -107,6 +110,7 @@ impl Default for MeasureView {
             whole_page: true,
             rect: [0.0, 0.0, 100.0, 100.0],
             label: String::new(),
+            style: None,
             count: Default::default(),
             takeoff: Default::default(),
             seeded_page: None,
@@ -381,7 +385,7 @@ fn finish(state: &mut MeasureView, pending: &mut Option<Edit>, doc: &Document, p
             kind: tool.kind(),
             points: state.points.clone(),
             scale,
-            style: Style { color: [0.0, 0.47, 0.84], ..Style::default() },
+            style: state.style.clone().unwrap_or(Style { color: [0.0, 0.47, 0.84], ..Style::default() }),
             label: state.label.clone(),
             author: author.into(),
         };
@@ -680,6 +684,8 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
 pub(crate) fn command(app: &mut PdfCraftApp, id: &str) {
     app.left = LeftPanel::Tool("measure");
     app.left_open = true;
+    // BuildCraft: in Takeoff the measuring controls are the Measure tab on the right.
+    app.buildcraft.tab = crate::buildcraft::side::Tab::Measure;
     if let Some((index, _)) = app.active_ids()
         && let Some(tool) = id.strip_prefix("measure.").and_then(Tool::from_name)
     {

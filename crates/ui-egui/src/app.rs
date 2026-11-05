@@ -56,6 +56,7 @@ impl PdfCraftApp {
             space_hand: None,
             full_screen_tool: None,
             comment_prefs: Default::default(),
+            buildcraft: Default::default(),
             theme: ThemeKind::Light,
             // A fresh install follows the desktop's appearance (#1248); saved settings override.
             theme_preference: ThemePreference::System,
@@ -575,6 +576,7 @@ impl eframe::App for PdfCraftApp {
         }
         chrome::tab_strip(self, ui);
         chrome::mode_bar(self, ui);
+        crate::buildcraft::toolbar::show(self, ui);
         // Whichever way another tab came to the front, it shows instead of the expanded view.
         if self.all_tools_full && self.all_tools_tab != self.shown_tab() {
             self.all_tools_full = false;
@@ -583,6 +585,7 @@ impl eframe::App for PdfCraftApp {
         crate::buildcraft::status_bar::show(self, ui);
         crate::buildcraft::markups::show(self, ui);
         side_panels::show(self, ui);
+        crate::buildcraft::side::show(self, ui);
         let t = theme::Tokens::get(&ctx);
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {
             if self.mode == Mode::AllTools && self.all_tools_full {

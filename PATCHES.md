@@ -130,7 +130,27 @@ grouped with subtotals and exported as CSV. The logic is in new files
 | `crates/ui-egui/src/app.rs` | The Markups list is drawn after the status bar |
 | `crates/ui-egui/tests/it/main.rs` | `mod markups;` |
 
+## Toolbar, right-hand tabs and Tool Chest (Interface plan, phase 3)
+
+The Takeoff workspace gets one toolbar across the top and a right-hand panel with Tool Chest,
+Properties, Measure and Layers tabs (layout after Markup Desk). Tool Chest tools carry a type,
+item, colour, line, fill and breakdown defaults, are grouped into sets saved with the preferences
+and shared as `.bctools.json` files, with Recent tools on top. The logic is in new files
+(`crates/measure/src/toolchest.rs`, `crates/ui-egui/src/buildcraft/toolbar.rs`, `side.rs`,
+`tool_chest.rs`, `properties.rs`, `crates/ui-egui/tests/it/tool_chest.rs`); the rest are hooks.
+
+| File | Change |
+|---|---|
+| `crates/measure/src/lib.rs` | `pub mod toolchest;` |
+| `crates/ui-egui/src/lib.rs` | `PdfCraftApp::buildcraft` (the Takeoff workspace's state) |
+| `crates/ui-egui/src/app.rs` | Its default; the toolbar is drawn after the mode bar and the right-hand panel after the side panels |
+| `crates/ui-egui/src/app/prefs.rs` | The chest is saved and restored as `buildcraft_tool_chest` |
+| `crates/ui-egui/src/panels/side_panels.rs` | No Tools pane in Takeoff (its tools are in the toolbar and tabs) |
+| `crates/ui-egui/src/canvas.rs` | No floating quick bar in Takeoff (the toolbar replaces it) |
+| `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::style` (new measurements are drawn in it); `measure.*` commands show the Measure tab |
+| `crates/ui-egui/tests/it/main.rs` | `mod tool_chest;` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
-`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, `crates/measure/src/takeoff.rs`, the count files above, `crates/ui-egui/src/buildcraft.rs` and `buildcraft/`.
+`.github/workflows/buildcraft-upstream-sync.yml`, `.github/workflows/buildcraft-windows-build.yml` (builds Windows x64 after each merge and posts it on the Releases page), `crates/measure/src/imperial.rs`, `crates/measure/src/takeoff.rs`, `crates/measure/src/toolchest.rs`, the count files above, `crates/ui-egui/src/buildcraft.rs` and `buildcraft/`.

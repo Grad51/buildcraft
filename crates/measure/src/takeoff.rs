@@ -59,7 +59,8 @@ impl Field {
 }
 
 /// Where a markup belongs. Empty fields are unassigned.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct Breakdown {
     pub building: String,
     pub floor: String,

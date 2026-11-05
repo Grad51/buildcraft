@@ -2646,7 +2646,8 @@ pub fn document_area(app: &mut PdfCraftApp, index: usize, ui: &mut egui::Ui) {
     }
     // Read mode hides the tools (#2646), and full screen is the page and nothing else (#1459);
     // the quick tools come back with the window.
-    if app.mode != crate::Mode::Read && !app.full_screen {
+    // BuildCraft: Takeoff's tools are in its toolbar across the top.
+    if app.mode != crate::Mode::Read && app.mode != crate::Mode::Takeoff && !app.full_screen {
         quick_bar(app, avail, ui);
     }
     if let Some((source, file, destination)) = remote_open {

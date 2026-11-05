@@ -19,14 +19,14 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
         QuickTool::Measure(measure_ui::Tool::Calibrate) => "Calibrate: click both ends of a dimension you know.",
         QuickTool::Hand => "Pan: drag the drawing.",
         QuickTool::MarqueeZoom => "Zoom: drag a box around the area to zoom to.",
-        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the panel on the left.",
+        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Chest.",
         _ => "",
     }
 }
 
 /// The drawing scale of `page` at its centre, as the title block would write it, or a note that
 /// the page has none.
-fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
+pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
     let view = app.views.get(index)?;
     let doc = app.session.get(view.id)?;
     let page = view.current;

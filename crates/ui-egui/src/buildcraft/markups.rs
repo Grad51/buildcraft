@@ -193,7 +193,10 @@ fn body(ui: &mut egui::Ui, state: &mut MarkupsView, t: &theme::Tokens) -> Option
         _ => {}
     }
     if rows.is_empty() {
-        ui.label(RichText::new(tl!("No measurements or counts yet. Pick a tool on the left and click the drawing.")).color(t.text_muted));
+        ui.label(
+            RichText::new(tl!("No measurements or counts yet. Pick a tool in the toolbar or the Tool Chest and click the drawing."))
+                .color(t.text_muted),
+        );
         return action;
     }
     if shown.is_empty() {

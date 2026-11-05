@@ -145,6 +145,7 @@ impl PdfCraftApp {
         v["comment_tool_pinned"] = serde_json::Value::Bool(self.comment_prefs.pinned);
         v["show_secured_notice"] = serde_json::Value::Bool(self.show_secured_notice);
         v["organize_zoom"] = serde_json::json!(self.organize_zoom);
+        v["buildcraft_tool_chest"] = crate::buildcraft::tool_chest::to_json(&self.buildcraft.chest);
         // Canonical names survive changes to the order of PAPERS and do not depend on UI language.
         v["print_paper"] = serde_json::json!(pdfcraft_engine::print::PAPERS.get(self.print_draft.paper).map(|(name, _)| *name));
         v.to_string()
@@ -153,6 +154,9 @@ impl PdfCraftApp {
     /// Restore state written by `persist`. Unknown or malformed data is ignored.
     pub fn restore(&mut self, json: &str) {
         let Ok(v) = serde_json::from_str::<serde_json::Value>(json) else { return };
+        if let Some(chest) = crate::buildcraft::tool_chest::from_json(&v["buildcraft_tool_chest"]) {
+            self.buildcraft.chest = chest;
+        }
         let panels = side_panels::restore(&v);
         self.side_panels = panels.panels;
         if let Some(open) = panels.tools_open {
