@@ -7,8 +7,8 @@ use egui::{Align, Layout};
 
 use crate::{PdfCraftApp, theme, widgets};
 
-/// Where every PdfCraft release is listed.
-pub const RELEASES_PAGE: &str = "https://github.com/storytold/pdfcraft/releases";
+/// Where every BuildCraft release is listed (BuildCraft: was PdfCraft's).
+pub const RELEASES_PAGE: &str = crate::buildcraft::updates::RELEASES_PAGE;
 
 /// Stands in for the network in tests.
 #[cfg(not(target_arch = "wasm32"))]
@@ -55,6 +55,11 @@ impl PdfCraftApp {
 
     /// Help ▸ Check for updates: ask for the latest release and show the outcome.
     pub fn check_for_updates(&mut self) {
+        // BuildCraft: PdfCraft's updater would install PdfCraft over BuildCraft.
+        if !crate::buildcraft::updates::UPSTREAM_UPDATER {
+            self.open_url(RELEASES_PAGE);
+            return;
+        }
         #[cfg(not(target_arch = "wasm32"))]
         {
             self.updates.open = true;
@@ -68,6 +73,10 @@ impl PdfCraftApp {
 
     /// Starts the checks and picks up their answers (each frame).
     pub(crate) fn poll_updates(&mut self) {
+        // BuildCraft: no check at start or on request (see `check_for_updates`).
+        if !crate::buildcraft::updates::UPSTREAM_UPDATER {
+            return;
+        }
         #[cfg(not(target_arch = "wasm32"))]
         {
             let Some(ctx) = self.ctx.clone() else { return };

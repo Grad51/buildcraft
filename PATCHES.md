@@ -150,6 +150,18 @@ and shared as `.bctools.json` files, with Recent tools on top. The logic is in n
 | `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::style` (new measurements are drawn in it); `measure.*` commands show the Measure tab |
 | `crates/ui-egui/tests/it/main.rs` | `mod tool_chest;` |
 
+## No PdfCraft updates
+
+PdfCraft's updater offers upstream PdfCraft releases and would install plain PdfCraft over
+BuildCraft, so it is off until BuildCraft has its own signed release channel. Help ▸ Check for
+updates opens BuildCraft's releases page instead. The switch and the page are in the new file
+`crates/ui-egui/src/buildcraft/updates.rs`.
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/platform/updates.rs` | `RELEASES_PAGE` is BuildCraft's; `check_for_updates` opens it and `poll_updates` returns early while `UPSTREAM_UPDATER` is off |
+| `crates/ui-egui/tests/it/updates.rs` | Rewritten: the command opens BuildCraft's releases page, and neither it nor the check at start asks PdfCraft's feed |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
