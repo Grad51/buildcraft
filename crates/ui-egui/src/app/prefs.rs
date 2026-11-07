@@ -186,6 +186,7 @@ impl PdfCraftApp {
         v["text_links"] = serde_json::Value::Bool(self.text_links);
         v["organize_zoom"] = serde_json::json!(self.organize_zoom);
         v["buildcraft_tool_chest"] = crate::buildcraft::tool_chest::to_json(&self.buildcraft.chest);
+        v["buildcraft_wheel"] = serde_json::json!(self.buildcraft.wheel.as_str());
         // Canonical names survive changes to the order of PAPERS and do not depend on UI language.
         v["print_paper"] = serde_json::json!(pdfcraft_engine::print::PAPERS.get(self.print_draft.paper).map(|(name, _)| *name));
         // Also set outside json! above, which is at serde_json's macro recursion limit.
@@ -200,6 +201,9 @@ impl PdfCraftApp {
         let Ok(v) = serde_json::from_str::<serde_json::Value>(json) else { return };
         if let Some(chest) = crate::buildcraft::tool_chest::from_json(&v["buildcraft_tool_chest"]) {
             self.buildcraft.chest = chest;
+        }
+        if let Some(wheel) = v["buildcraft_wheel"].as_str().and_then(crate::buildcraft::navigation::Wheel::parse) {
+            self.buildcraft.wheel = wheel;
         }
         if let Ok(mut bar) = serde_json::from_value::<crate::hotbar::Hotbar>(v["hotbar"].clone()) {
             if v["hotbar"].get("placed").is_none() {
