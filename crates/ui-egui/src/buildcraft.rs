@@ -7,6 +7,7 @@ pub(crate) mod side;
 pub(crate) mod status_bar;
 pub(crate) mod tool_chest;
 pub(crate) mod toolbar;
+pub(crate) mod updates;
 
 use pdfcraft_engine::measure::toolchest::{Chest, ToolRef};
 
