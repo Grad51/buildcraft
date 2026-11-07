@@ -58,6 +58,16 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 let small = |s: &str| RichText::new(s).font(theme::regular(11.5)).color(t.text_muted);
                 ui.label(small(tl!(hint)));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    let wheel = &mut app.buildcraft.wheel;
+                    if ui
+                        .selectable_label(false, RichText::new(tl!(wheel.label())).font(theme::regular(11.5)))
+                        .on_hover_text(tl!(
+                            "Switch the mouse wheel between zooming at the pointer and scrolling. Ctrl with the wheel does the other."
+                        ))
+                        .clicked()
+                    {
+                        *wheel = wheel.toggled();
+                    }
                     let Some(view) = app.views.get_mut(index) else { return };
                     ui.label(small(&format!("{:.0}%", view.zoom * 100.0))).on_hover_text(tl!("Zoom"));
                     let snap = &mut view.measure.snap_enabled;

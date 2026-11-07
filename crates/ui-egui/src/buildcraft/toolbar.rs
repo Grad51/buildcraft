@@ -52,6 +52,8 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     if app.mode != Mode::Takeoff || app.active.is_none() {
         return;
     }
+    // Before the page reads its keys: Escape puts the tool down.
+    super::navigation::keys(app, ui.ctx());
     let t = theme::Tokens::get(ui.ctx());
     let mut action = None;
     egui::Panel::top("buildcraft-toolbar")

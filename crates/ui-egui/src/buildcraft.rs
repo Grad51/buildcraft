@@ -2,6 +2,7 @@
 //! Properties, Measure, Layers), the Markups list and the status bar. Kept apart from PdfCraft's
 //! shell so upstream merges stay small (PATCHES.md).
 pub(crate) mod markups;
+pub(crate) mod navigation;
 pub(crate) mod properties;
 pub(crate) mod side;
 pub(crate) mod status_bar;
@@ -22,4 +23,6 @@ pub(crate) struct Workspace {
     pub active: Option<tool_chest::Active>,
     /// The saved tool the Properties tab edits.
     pub editing: Option<ToolRef>,
+    /// What the mouse wheel does over the drawing. Saved with the preferences.
+    pub wheel: navigation::Wheel,
 }
