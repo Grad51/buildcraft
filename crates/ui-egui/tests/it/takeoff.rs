@@ -73,3 +73,101 @@ fn a_scale_set_on_the_page_shows_as_the_title_block_writes_it() {
     assert_eq!(h.state().left, LeftPanel::Tool("measure"), "the scale opens the drawing-scale controls");
     h.get_by_label("Distance");
 }
+
+/// One frame in production order: eframe's raw input hook runs first (kittest doesn't call it).
+fn production_step(h: &mut Harness<'static, PdfCraftApp>) {
+    let ctx = h.ctx.clone();
+    let mut raw = std::mem::take(h.input_mut());
+    h.state_mut().prepare_raw_input(&ctx, &mut raw);
+    *h.input_mut() = raw;
+    h.step();
+}
+
+/// One mouse-wheel notch up (towards zooming in), with `modifiers`. Pushed into the raw input
+/// (not `Harness::event`, which kittest adds after the raw input hook).
+fn notch(modifiers: egui::Modifiers) -> egui::Event {
+    egui::Event::MouseWheel {
+        unit: egui::MouseWheelUnit::Line,
+        delta: egui::vec2(0.0, 1.0),
+        phase: egui::TouchPhase::Move,
+        modifiers,
+        source: egui::MouseWheelSource::Unknown,
+    }
+}
+
+#[test]
+fn over_the_drawing_the_wheel_zooms_and_ctrl_wheel_scrolls() {
+    // Animation effects off: a notch zooms its whole step in the frame it arrives.
+    let mut h = harness(|app| {
+        app.set_option("default-mode", "takeoff").unwrap();
+        app.set_option("animation_effects", "off").unwrap();
+    });
+    let vp = h.state().views[0].viewport_rect();
+    h.hover_at(vp.center());
+    production_step(&mut h);
+    production_step(&mut h);
+    let zoom = h.state().views[0].zoom;
+    h.input_mut().events.push(notch(egui::Modifiers::NONE));
+    production_step(&mut h);
+    production_step(&mut h);
+    let zoomed = h.state().views[0].zoom;
+    assert!(zoomed > zoom * 1.01, "a plain notch zooms in: {zoom} -> {zoomed}");
+
+    // Ctrl with the wheel scrolls: the zoom stays.
+    h.input_mut().events.push(notch(egui::Modifiers::COMMAND));
+    production_step(&mut h);
+    production_step(&mut h);
+    assert_eq!(h.state().views[0].zoom, zoomed, "Ctrl-wheel scrolls in Takeoff");
+
+    // The status-bar switch puts the wheel back to scrolling, and is saved.
+    h.get_by_label("Wheel: zoom").click();
+    h.run_steps(3);
+    h.get_by_label("Wheel: scroll");
+    h.hover_at(vp.center());
+    production_step(&mut h);
+    h.input_mut().events.push(notch(egui::Modifiers::NONE));
+    production_step(&mut h);
+    production_step(&mut h);
+    assert_eq!(h.state().views[0].zoom, zoomed, "set to scroll, the wheel scrolls");
+    let saved = h.state().persist();
+    let mut fresh = PdfCraftApp::new();
+    fresh.restore(&saved);
+    assert!(fresh.persist().contains(r#""buildcraft_wheel":"scroll""#));
+}
+
+#[test]
+fn outside_takeoff_the_wheel_still_scrolls() {
+    let mut h = harness(|app| app.set_option("animation_effects", "off").unwrap());
+    let vp = h.state().views[0].viewport_rect();
+    h.hover_at(vp.center());
+    production_step(&mut h);
+    let zoom = h.state().views[0].zoom;
+    h.input_mut().events.push(notch(egui::Modifiers::NONE));
+    production_step(&mut h);
+    production_step(&mut h);
+    assert_eq!(h.state().views[0].zoom, zoom);
+}
+
+#[test]
+fn escape_cancels_a_half_drawn_measurement_then_goes_back_to_select() {
+    let mut h = harness(|app| app.set_option("default-mode", "takeoff").unwrap());
+    assert!(h.state_mut().execute("measure.distance"));
+    h.run_steps(3);
+    let tool = h.state().quick_tool;
+    assert!(matches!(tool, pdfcraft_ui_egui::QuickTool::Measure(_)), "{tool:?}");
+    let vp = h.state().views[0].viewport_rect();
+    h.hover_at(vp.center());
+    h.run_steps(2);
+    // One point placed: the first Escape drops it and keeps the tool.
+    h.state_mut().views[0].measure.points.push([100.0, 100.0]);
+    h.state_mut().views[0].measure.page = Some(0);
+    h.key_press(egui::Key::Escape);
+    h.run_steps(2);
+    assert!(h.state().views[0].measure.points.is_empty());
+    assert_eq!(h.state().quick_tool, tool, "the first Escape only cancels the measurement");
+    // Nothing half drawn: Escape goes back to Select.
+    h.key_press(egui::Key::Escape);
+    h.run_steps(2);
+    assert_eq!(h.state().quick_tool, pdfcraft_ui_egui::QuickTool::Select);
+    h.get_by_label_contains("Select: click a markup");
+}

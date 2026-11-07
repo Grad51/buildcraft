@@ -163,6 +163,17 @@ updates opens BuildCraft's releases page instead. The switch and the page are in
 | `parity/acrobat-features.toml` | `view.check-for-updates` evidence and notes follow the new tests |
 | `crates/ui-egui/tests/it/updates.rs` | Rewritten: the command opens BuildCraft's releases page, and neither it nor the check at start asks PdfCraft's feed |
 
+## Mouse navigation (Bluebeam-style)
+
+In Takeoff the mouse wheel zooms at the pointer over the drawing (Ctrl-wheel scrolls; a status-bar
+switch puts it back), and Escape goes back to Select once nothing is half drawn. The code is in the
+new file `crates/ui-egui/src/buildcraft/navigation.rs`; one hook is upstream.
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app/frame.rs` | `prepare_raw_input` calls `buildcraft::navigation::raw_input` before the wheel speed is applied |
+| `crates/ui-egui/src/app/prefs.rs` | The wheel setting is saved and restored as `buildcraft_wheel` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,

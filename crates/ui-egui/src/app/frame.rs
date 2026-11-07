@@ -82,6 +82,9 @@ impl PdfCraftApp {
         if let Some(control) = &self.control {
             control.set_epoch(self.input_epoch());
         }
+        // BuildCraft: the wheel zooms over the drawing in Takeoff (before the wheel speed, which
+        // treats zooming steps apart).
+        crate::buildcraft::navigation::raw_input(self, ctx, raw);
         // Before egui reads this frame's wheel input.
         self.scroll_speed.apply(ctx, raw);
         // The native menu's key equivalents.
