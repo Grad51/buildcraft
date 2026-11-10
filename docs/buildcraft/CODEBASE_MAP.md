@@ -1,6 +1,6 @@
 # BuildCraft codebase map
 
-This is a map of the fork as of `main` @ PR #6 (Nov 6, 2026), which sits on PdfCraft v0.14.0. Paths
+This is a map of the fork after the Phase 0 merge (Nov 10, 2026), which sits on PdfCraft v0.18.1. Paths
 are relative to the repo root. When this map and the code disagree, the code wins, and this file
 should be fixed in the same PR.
 
@@ -58,14 +58,17 @@ added to `TABLE`.
   tab), `active`, `mode`, `left`, `right`, `quick_tool`, and `buildcraft: buildcraft::Workspace`.
 - **Frame** (`src/app.rs`, `ui()`). It draws in this order: tab strip, mode bar, BuildCraft
   toolbar, BuildCraft status bar, BuildCraft Markups list, upstream side panels, BuildCraft right
-  panel, then the central canvas (`canvas::document_area`), then overlays. The `Panel::top`,
+  panel, then the central page area (`panes::page_area`, which calls `canvas::document_area` per pane),
+  then overlays. The BuildCraft panels sit inside upstream's `if !hidden.window_ui` block (a PDF can
+  ask to hide the interface). The `Panel::top`,
   `bottom` and `right` calls here are the layout seams.
 - **Modes.** `state.rs` has `Mode { AllTools, Takeoff, Read, Edit, Convert, Sign }`. Takeoff is
   the app default only in `apps/pdfcraft/src/main.rs`. `PdfCraftApp::new()` (which tests use)
   still starts in All tools.
 - **View state.** `DocView` (`src/canvas.rs`) has `zoom`, `fit`
   (`Fit { Width, Page, Height, None }`), `layout` (`Single | TwoUp`), `continuous`, `current`,
-  `back`, `forward` and `rotation`. One view per tab, and there is **no split view**.
+  `back`, `forward` and `rotation`. Since v0.18 there is a two-pane split view (`panes.rs`,
+  `view.split`): each `DocView` has a pane `Place` (Main or Second), and `panes::page_area` draws them.
   - `canvas/navigation.rs`: `go_to_page`, `step_page`, `go_to_typed`, `view_history`, `shortcuts()`.
   - `canvas/zoom.rs`: `set_fit`, `set_zoom`, `zoom_at`, `zoom_to_rect`, `set_layout`, `set_continuous`.
   - Page field, zoom and fit controls: `chrome.rs` (`right_rail`, around lines 537–790).
@@ -74,7 +77,8 @@ added to `TABLE`.
   - `CommentTool` has Note, TextBox, Highlight, Underline, StrikeOut, Squiggly, Ink, Line, Arrow,
     Rectangle, Oval, Polygon, PolyLine, Cloud, Callout, Caret, ReplaceText, Attach, Eraser.
   - `measure_ui::Tool` has Distance, Perimeter, Area, Calibrate and Count.
-  - Dispatch is a hard-coded match in `canvas::document_area`. **There is no tool registry:** a
+  - Dispatch is a hard-coded match in `canvas::document_area`. Measure tools get their clicks as
+    `measure_ui::Clicks { single, double }` from the page router, not raw responses. **There is no tool registry:** a
     new tool means a `QuickTool` variant plus an arm in `canvas.rs` (both upstream hooks).
 - **Keys.** `app/keys.rs::tool_keys`: V = Select, H = Hand, hold Space for a temporary Hand.
   `registry_shortcuts` dispatches registry shortcuts, and view keys live in
@@ -86,6 +90,10 @@ added to `TABLE`.
 - **Theme.** `theme.rs`: `ThemeKind { Light, Dark, Estimator }` and `Tokens` (read with
   `Tokens::get(ctx)`).
 - **Prefs.** `app/prefs.rs` (the BuildCraft key is `buildcraft_tool_chest`).
+- **Preferences dialog.** `dialogs/preferences.rs` (searchable cards). Takeoff is in its Default
+  workspace mode pills.
+- **Lints that bite.** `clippy.toml` bans `egui::ComboBox` (use `craft_ui::ComboBox`) and egui's own
+  checkbox and radio (use `widgets::checkbox` and `widgets::radio`).
 
 ## BuildCraft code (no conflicts: new files)
 

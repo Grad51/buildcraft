@@ -36,7 +36,9 @@ Upstream PdfCraft already provides navigation commands (`view.previous_view`, `v
 `view.marquee_zoom`, `view.fit_width_scrolling`, `view.fit_one_page`, `view.continuous`,
 `view.layout.single`, `view.layout.two_up`, tabs), thumbnails, bookmarks, layers, search,
 comments (cloud, callout, stamps, snapshot), measurement with ISO 32000 `/Measure` and viewport
-(`/VP`) dictionaries, snapping and ortho. **It has no split view, no view sync and no Alt-key
+(`/VP`) dictionaries, snapping and ortho. Since v0.18 it also has a two-pane **split view**
+(`view.split`, Cmd/Ctrl+\\, `crates/ui-egui/src/panes.rs`): a pane to the right or below, each
+with its own tabs, and one document can show in both. **It has no view sync and no Alt-key
 shortcuts:** `engine::commands::Shortcut` only knows Cmd/Ctrl and Shift.
 
 ## 3. Upstream strategy
@@ -148,7 +150,7 @@ Bluebeam behavior is taken from Bluebeam's public help pages and from watching t
 never from its code or assets. The reference shortcut table is in Appendix A.
 
 **Phase 0: Upstream catch-up and fixtures.** Merge PdfCraft `main` and resolve the conflicts
-using `PATCHES.md`. Update `Base:`. Write a generator for the sample sheet (`tests/it/support/bc_sample.rs`, using
+using `PATCHES.md`. Update `Base:`. Write a generator for the sample sheet (`crates/measure/tests/bc_sample.rs`, using
 `pdfcraft-testkit`; its scales go through `measure::set_scale`). Commit both the generator and
 the PDF it writes. *Accept:* the fork builds; all upstream and
 BuildCraft tests pass; Takeoff mode opens the sample sheet. *Verify:* the scoped clippy and test commands from
@@ -166,16 +168,18 @@ row either works or is listed as skipped with a reason. *Verify:* a kittest that
 chord and checks the active tool or command.
 
 **Phase 2: Navigation bar.** Add a bar between the canvas and the Markups list, in
-`buildcraft/nav_bar.rs`. Left side: split controls (disabled until Phase 6). Center: Select, Pan,
+`buildcraft/nav_bar.rs`. Left side: split controls, wired to upstream's `view.split`. Center: Select, Pan,
 Zoom tool, First, Previous, page field (shows page labels such as `E1.01`, takes a label or a
 number), Next, Last, Previous view, Next view. Right side: page size, then page scale (clicking it
 opens Calibrate). Wire to existing upstream commands. *Accept:* every control works, and page
 scale shows "Scale not set" until calibrated. *Verify:* kittest drives each control on the
 sample sheet and checks the page index, zoom and view history.
 
-**Phase 3: Mouse navigation.** Middle-drag pans. Space plus drag pans with any tool. The wheel
-scrolls, Ctrl+wheel zooms at the cursor, and a preference swaps the two. Double-clicking an
-empty spot with Pan re-centers. Zoom tool: drag a box to fill the view; Ctrl+click zooms out.
+**Phase 3: Mouse navigation.** Open PR #7 already does the wheel (it zooms at the pointer in
+Takeoff, Ctrl+wheel scrolls, and a status-bar toggle swaps them) and two-step Escape. Merge or
+rebase it first, then add: middle-drag pans, Space plus drag pans with any tool (upstream has a
+temporary Hand on Space; check it works with measure tools), and double-clicking an empty spot
+with Pan re-centers. Zoom tool: drag a box to fill the view; Ctrl+click zooms out.
 *Accept:* none of this breaks drawing or selecting with a measure tool active. *Verify:* kittest
 pointer events check pan offset and zoom before and after.
 
@@ -193,16 +197,14 @@ BuildCraft's panel hosts; don't copy them. Thumbnails show the page label and a 
 is a major dependency, so ask first. *Accept:* any panel moves sides and stays there after a
 restart. *Verify:* kittest moves a panel, saves preferences, reloads, and checks.
 
-**Phase 6a: Split view.** Split horizontal (Ctrl+H) and vertical (Ctrl+2). Same document, two
-independent views, each with its own page, zoom and scroll. Unsplit (Ctrl+Shift+2). Read how
-`canvas` holds view state first. If one view per tab is assumed deep in the code, stop and
-report a design rather than forcing it. *Accept:* two panes on different pages; markups made in
-one appear in the other. *Verify:* kittest.
-
-**Phase 6b: More splits and sync.** Up to 4 panes, Toggle orientation (Ctrl+I), Switch pane
-(Ctrl+1), different documents per pane, and Sync (pan and zoom follow, for comparing
-revisions). *Accept:* with Sync on, zooming one pane zooms the others to the same page region.
-*Verify:* kittest compares view rectangles.
+**Phase 6: Split view shortcuts and Sync.** Build on upstream's split view (`panes.rs`); don't
+write a second one. Map Bluebeam's keys onto it: split right (Ctrl+2), split below (Ctrl+H),
+unsplit (Ctrl+Shift+2), toggle orientation (Ctrl+I) and switch pane (Ctrl+1), adding to
+`panes.rs` only through small hooks if a needed function isn't public. Then add **Sync**, kept in
+`buildcraft/`: when on, panning and zooming one pane moves the other to the same region of the
+same page number. It's for comparing revisions. More than two panes is out of scope. *Accept:*
+each shortcut works in Takeoff, and with Sync on, zooming one pane gives the other the same view
+rectangle. *Verify:* kittest compares the panes' view rectangles.
 
 **Phase 7: Markup tools in the toolbar.** Select, Pen, Highlight, Text box, Callout, Cloud,
 Cloud with callout, Line, Arrow, Rectangle, Ellipse, Polygon, Polyline, Stamp, Snapshot. Use
@@ -269,7 +271,8 @@ search across a whole plan set, revision compare overlay, scanned-sheet assist.
 7. Before finishing, run the scoped build and test commands from `CODEBASE_MAP.md`. Report exactly what
    ran and what didn't. Never claim a check you didn't run.
 8. Merging is the owner's call. Open a PR into `main` with the phase name, the acceptance list
-   ticked, and the verification output.
+   ticked, and the verification output. Follow `AGENTS.md` house rule 15: the PR does not say an
+   agent wrote it.
 9. If the phase can't be done as written, stop. Write what you found and a smaller next step in
    the PR description instead of improvising scope.
 
