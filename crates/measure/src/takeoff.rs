@@ -110,7 +110,7 @@ impl Breakdown {
         let o = doc.resolve(o);
         let Some(b) = o.as_dict() else { return out };
         for f in Field::ALL {
-            let v = text(b, f.key().as_bytes());
+            let v = text(doc, b, f.key().as_bytes());
             *out.get_mut(f) = v.trim().chars().take(MAX_VALUE).filter(|c| !c.is_control()).collect();
         }
         out
@@ -329,7 +329,7 @@ pub fn rows(doc: &Document) -> Rows {
             quantity: "1 ea".into(),
             breakdown: Breakdown::read(doc, &d),
             color: c.color,
-            author: text(&d, b"T"),
+            author: text(doc, &d, b"T"),
         });
     }
     out.rows.sort_by_key(|r| (r.page, r.index));

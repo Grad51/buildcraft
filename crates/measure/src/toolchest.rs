@@ -139,7 +139,7 @@ impl Tool {
 
     /// The style its measurements are drawn with.
     pub fn style(&self) -> Style {
-        Style { color: self.color, opacity: self.opacity, width: self.width, fill: self.fill.filter(|_| self.kind.has_fill()) }
+        Style { color: self.color, opacity: self.opacity, width: self.width, fill: self.fill.filter(|_| self.kind.has_fill()), ..Style::default() }
     }
 
     /// Whether `other` is the same tool for Recent: same name and kind.
