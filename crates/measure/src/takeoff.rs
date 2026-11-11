@@ -176,6 +176,8 @@ impl Patch {
 
 /// What a takeoff markup is.
 #[derive(Clone, Debug, PartialEq)]
+// One short-lived value per markup written, so the size difference costs nothing worth a Box.
+#[allow(clippy::large_enum_variant)]
 pub enum Markup {
     Measurement(NewMeasurement),
     Count(count::NewCount),

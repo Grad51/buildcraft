@@ -738,8 +738,8 @@ fn counts_total_per_item_and_page_and_survive_saving() {
     // The marker is a standard filled circle that shows the item as its comment.
     let (_, dict) = annot(&reopened, 0, 2).unwrap();
     assert_eq!(dict.name(b"Subtype"), Some(&b"Circle"[..]));
-    assert_eq!(text(&dict, b"Contents"), "Fixture A");
-    assert_eq!(text(&dict, b"Subj"), "Fixture A");
+    assert_eq!(text(&reopened, &dict, b"Contents"), "Fixture A");
+    assert_eq!(text(&reopened, &dict, b"Subj"), "Fixture A");
     assert!(dict.get(b"IC").is_some(), "filled");
     assert_eq!(listing.markers[2].color, Some([0.9, 0.1, 0.1]));
     assert!(list(&reopened).unsupported.is_empty(), "markers are not measurements");

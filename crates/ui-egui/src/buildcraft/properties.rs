@@ -60,7 +60,7 @@ fn form(ui: &mut egui::Ui, tool: &Tool) -> Option<Tool> {
     egui::Grid::new("buildcraft-tool-properties").num_columns(2).spacing(egui::vec2(8.0, 6.0)).show(ui, |ui| {
         changed |= text_row(ui, "Name", &mut edited.name, "");
         ui.label(tl!("Type"));
-        egui::ComboBox::from_id_salt("buildcraft-tool-kind").selected_text(tl!(edited.kind.label())).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt("buildcraft-tool-kind").selected_text(tl!(edited.kind.label())).show_ui(ui, |ui| {
             for kind in ToolKind::ALL {
                 changed |= ui.selectable_value(&mut edited.kind, kind, tl!(kind.label())).changed();
             }

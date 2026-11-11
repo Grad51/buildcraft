@@ -144,7 +144,7 @@ fn body(ui: &mut egui::Ui, state: &mut MarkupsView, t: &theme::Tokens) -> Option
         ui.add_space(8.0);
         ui.label(tl!("Group by"));
         let combo =
-            egui::ComboBox::from_id_salt("buildcraft-markups-group").selected_text(tl!(state.group_by.label())).width(90.0).show_ui(ui, |ui| {
+            craft_ui::ComboBox::from_id_salt("buildcraft-markups-group").selected_text(tl!(state.group_by.label())).width(90.0).show_ui(ui, |ui| {
                 for g in GroupBy::ALL {
                     ui.selectable_value(&mut state.group_by, g, tl!(g.label()));
                 }

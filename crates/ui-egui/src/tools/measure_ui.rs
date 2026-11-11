@@ -650,14 +650,16 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
     ui.horizontal(|ui| {
         let label = ui.label(tl!("Imperial scale"));
         let current = preset_of(state);
-        let combo =
-            egui::ComboBox::from_id_salt("measure-imperial-scales").selected_text(current.map_or("—", |p| p.label)).width(110.0).show_ui(ui, |ui| {
+        let combo = craft_ui::ComboBox::from_id_salt("measure-imperial-scales").selected_text(current.map_or("—", |p| p.label)).width(110.0).show_ui(
+            ui,
+            |ui| {
                 for p in measure::imperial::PRESETS {
                     if ui.selectable_label(current == Some(p), p.label).clicked() {
                         imperial = Some(*p);
                     }
                 }
-            });
+            },
+        );
         // The visible label names the combo box for assistive technology and tests.
         combo.response.labelled_by(label.id);
     });
@@ -694,7 +696,7 @@ fn panel_body(app: &mut PdfCraftApp, ui: &mut egui::Ui, _t: &Tokens) {
         }
         if feet && let Some(fraction) = state.feet_inches.as_mut() {
             let combo =
-                egui::ComboBox::from_id_salt("measure-inch-fraction").selected_text(format!("1/{fraction}\"")).width(48.0).show_ui(ui, |ui| {
+                craft_ui::ComboBox::from_id_salt("measure-inch-fraction").selected_text(format!("1/{fraction}\"")).width(48.0).show_ui(ui, |ui| {
                     for f in measure::imperial::FRACTIONS {
                         ui.selectable_value(fraction, f, format!("1/{f}\""));
                     }
