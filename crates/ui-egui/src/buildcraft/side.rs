@@ -1,4 +1,5 @@
-//! The Takeoff workspace's right-hand panel: Tool Library, Properties, Measure and Layers tabs.
+//! The Takeoff workspace's left-hand panel: Tool Library, Properties, Measurements and Layers.
+//! The left access bar (`panel_bars`) and the Alt chords choose the tab and put the panel away.
 use crate::{Mode, PdfCraftApp, measure_ui, theme, widgets};
 use egui::RichText;
 
@@ -21,35 +22,30 @@ impl Tab {
         match self {
             Self::ToolChest => "Tool Library",
             Self::Properties => "Properties",
-            Self::Measure => "Measure",
+            Self::Measure => "Measurements",
             Self::Layers => "Layers",
         }
     }
 }
 
 /// Draws the panel. It belongs to the Takeoff workspace, so it shows there when a document is
-/// open; drawn after PdfCraft's side panels, so it sits beside the page.
+/// open; drawn after the left access bar and PdfCraft's side panels, so it sits between the bar
+/// and the page.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     super::tool_chest::track(app);
     if app.mode != Mode::Takeoff || app.active.is_none() || app.buildcraft.hidden.side {
         return;
     }
     let t = theme::Tokens::get(ui.ctx());
-    egui::Panel::right("buildcraft-side")
+    egui::Panel::left("buildcraft-side")
         .resizable(true)
         .default_size(WIDTH)
         .size_range(240.0..=520.0)
         .frame(egui::Frame::NONE.fill(t.panel).inner_margin(egui::Margin::symmetric(10, 8)))
         .show(ui, |ui| {
             widgets::begin_dialog(ui);
-            ui.horizontal(|ui| {
-                ui.spacing_mut().item_spacing.x = 2.0;
-                for tab in Tab::ALL {
-                    if ui.selectable_label(app.buildcraft.tab == tab, RichText::new(tl!(tab.label())).font(theme::regular(13.0))).clicked() {
-                        app.buildcraft.tab = tab;
-                    }
-                }
-            });
+            // The access bar chooses the tab; the panel names it.
+            ui.label(RichText::new(tl!(app.buildcraft.tab.label())).font(theme::medium(13.0)).color(t.text));
             ui.separator();
             match app.buildcraft.tab {
                 Tab::ToolChest => {

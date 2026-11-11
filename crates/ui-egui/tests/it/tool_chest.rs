@@ -1,4 +1,4 @@
-//! The Tool Library (BuildCraft): saved takeoff tools in the Takeoff workspace's right-hand tabs.
+//! The Tool Library (BuildCraft): saved takeoff tools in the Takeoff workspace's left-hand panel.
 //! A click uses a tool once, a double-click keeps it; each tool sets the item, colour and
 //! breakdown its markups are saved with.
 
@@ -55,9 +55,14 @@ fn pointer_click(h: &mut Harness<'static, PdfCraftApp>, label: &str, times: usiz
     h.run_steps(3);
 }
 
-/// A tab of the right-hand panel: PdfCraft's rail, further right, has a Layers button too.
-fn tab<'a>(h: &'a Harness<'static, PdfCraftApp>, name: &'a str) -> egui_kittest::Node<'a> {
-    h.get_all_by_label(name).min_by(|a, b| a.rect().left().total_cmp(&b.rect().left())).expect("the tab")
+/// The left access bar's icon for a tab of the left-hand panel.
+fn tab(name: &str) -> &'static str {
+    match name {
+        "Tool Library" => "Tool Library panel (Alt+X)",
+        "Properties" => "Properties panel (Alt+P)",
+        "Measurements" => "Measurements panel (Alt+U)",
+        _ => "Layers panel (Alt+Y)",
+    }
 }
 
 fn tool(h: &Harness<'static, PdfCraftApp>) -> String {
@@ -72,9 +77,10 @@ fn rows(h: &Harness<'static, PdfCraftApp>) -> Vec<pdfcraft_engine::measure::take
 #[test]
 fn takeoff_has_a_toolbar_and_the_four_tabs() {
     let mut h = harness(false);
-    for name in ["Tool Library", "Properties", "Measure", "Layers"] {
-        tab(&h, name);
+    for name in ["Tool Library", "Properties", "Measurements", "Layers"] {
+        h.get_by_label(tab(name));
     }
+    h.get_by_label("Tool Library");
     for label in ["Select (V)", "Measure length", "Measure area", "Count items", "Cloud", "Rectangle"] {
         h.get_by_label(label);
     }
@@ -88,10 +94,11 @@ fn takeoff_has_a_toolbar_and_the_four_tabs() {
     h.get_by_label("Measure area").click();
     h.run_steps(3);
     assert_eq!(tool(&h), "Measure(Area)");
-    tab(&h, "Measure").click();
+    h.get_by_label(tab("Measurements")).click();
     h.run_steps(3);
+    h.get_by_label("Measurements");
     h.get_by_label("Distance");
-    tab(&h, "Layers").click();
+    h.get_by_label(tab("Layers")).click();
     h.run_steps(3);
     h.get_by_label("This drawing has no layers.");
 }

@@ -24,9 +24,11 @@ fn the_takeoff_tab_opens_the_measuring_panel_and_the_status_bar() {
     h.run_steps(4);
     assert_eq!(h.state().mode, Mode::Takeoff);
     assert_eq!(h.state().left, LeftPanel::Tool("measure"));
-    // Its tools are in the toolbar and the Tool Library; measuring controls are the Measure tab.
+    // Its tools are in the toolbar and the Tool Library; measuring controls are the Measurements
+    // tab, behind the left access bar.
     h.get_by_label("Measure length");
     h.get_by_label("Tool Library");
+    h.get_by_label("Measurements panel (Alt+U)");
     h.get_by_label_contains("Page 1 / ");
     h.get_by_label("Scale: No scale set");
     h.get_by_label_contains("Select: click a markup");

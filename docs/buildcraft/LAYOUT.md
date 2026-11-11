@@ -16,10 +16,10 @@ Bluebeam trademark.
 | Menu row | File, Edit, View, …; workspace tabs; command search | PdfCraft's, kept |
 | Toolbar | Undo/redo, Select/Pan/Zoom, markup tools, measuring tools | Built |
 | Properties row | Colour, line width, fill, font of the selected markup or the tool in hand; document facts when nothing is selected | Not built |
-| Left access bar | A narrow icon strip on the window's left edge; each icon opens its panel beside it, and clicking the lit icon closes the panel | Work order `phase-5a-panel-bars.md` |
-| Left panel | Tool Library, Properties, Measurements, Layers | Built on the right; moves left in 5a |
+| Left access bar | A narrow icon strip on the window's left edge; each icon opens its panel beside it, and clicking the lit icon closes the panel | Built (5a) |
+| Left panel | Tool Library, Properties, Measurements, Layers | Built (moved left in 5a) |
 | Drawing | The sheet, split in two panes on request | Built |
-| Right access bar | The same kind of strip on the right edge, for Thumbnails, Bookmarks, Search, Comments, Attachments, Signatures | 5a (replaces PdfCraft's rail in Takeoff) |
+| Right access bar | The same kind of strip on the right edge, for Thumbnails, Bookmarks, Search, Comments, Attachments, Signatures | Built (5a); replaces PdfCraft's rail in Takeoff |
 | Navigation bar | Split, Select/Pan/Zoom, paging with a page field, view history, page size, scale | Built |
 | Markups list | Bottom panel: every markup and measurement, grouped, with totals | Built as a simple list; table columns are Phase 9 |
 | Status bar | Tool hint, snap and grid switches, cursor position, zoom | Built in part; switches are Phase 4 |

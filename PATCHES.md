@@ -202,6 +202,23 @@ the new file `crates/ui-egui/src/buildcraft/nav_bar.rs` (tests: `crates/ui-egui/
 | `crates/ui-egui/src/app.rs` | `buildcraft::nav_bar::show` is drawn directly after `buildcraft::side::show`, inside upstream's `if !hidden.window_ui` |
 | `crates/ui-egui/tests/it/main.rs` | `mod nav_bar;` |
 
+## Panel access bars (roadmap phase 5a)
+
+In Takeoff a narrow icon strip on each edge of the window. The left strip shows BuildCraft's panel
+(now on the left, with a heading in place of its tab buttons; the measuring tab is
+"Measurements") on its Tool Library, Properties, Measurements or Layers tab; the right strip
+opens PdfCraft's Thumbnails, Bookmarks, Search, Comments, Attachments and Signatures panels and
+replaces PdfCraft's rail there. The lit icon is the panel showing; clicking it closes the panel.
+Both strips act through the Alt chords' code (`keymap::run`). The strips are drawn inside the
+status bar and Markups list rows. The strips are the new file
+`crates/ui-egui/src/buildcraft/panel_bars.rs` (tests: `crates/ui-egui/tests/it/panel_bars.rs`).
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/panels/side_panels.rs` | `show` draws `buildcraft::panel_bars::right` instead of `chrome::right_rail` in `Mode::Takeoff` |
+| `crates/ui-egui/src/app.rs` | `buildcraft::panel_bars::left` is drawn directly before `side_panels::show`, inside upstream's `if !hidden.window_ui` |
+| `crates/ui-egui/tests/it/main.rs` | `mod panel_bars;` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,

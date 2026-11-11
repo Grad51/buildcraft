@@ -101,7 +101,8 @@ added to `TABLE`.
 |---|---|
 | `crates/ui-egui/src/buildcraft.rs` | `Workspace { chest, tab, active, editing }`, the Takeoff workspace state |
 | `buildcraft/toolbar.rs` | Top toolbar: select, pan, marquee zoom, 12 markup tools (`MARKUP`), 5 measure tools (`MEASURE`) |
-| `buildcraft/side.rs` | Right panel, `Tab { ToolChest, Properties, Measure, Layers }`. The Measure tab calls `measure_ui::panel` |
+| `buildcraft/side.rs` | Left panel, `Tab { ToolChest, Properties, Measure, Layers }` (the Measure tab is labelled "Measurements" and calls `measure_ui::panel`) |
+| `buildcraft/panel_bars.rs` | The access bars: `left` (one icon per `Tab`) and `right` (PdfCraft's panels, in place of the rail in Takeoff); clicks go through `keymap::run` |
 | `buildcraft/tool_chest.rs`, `properties.rs` | Using, tracking, importing and exporting saved tools, and editing one |
 | `buildcraft/markups.rs` | Bottom Markups list (`egui_extras::TableBuilder`): filter, group, multi-select, apply breakdown, CSV. It re-reads on `edit_generation()` |
 | `buildcraft/status_bar.rs` | Tool hint and page scale |

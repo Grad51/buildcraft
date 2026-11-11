@@ -51,8 +51,6 @@ impl Mods {
         (ctrl, m.shift, m.alt) == want && (ctrl || !m.ctrl)
     }
 
-    // Read by the tests today; a shortcuts list will show it.
-    #[cfg_attr(not(test), allow(dead_code))]
     fn label(self) -> &'static str {
         match self {
             Self::None => "",
@@ -178,7 +176,6 @@ pub(crate) const BINDINGS: &[Binding] = &[
 ];
 
 /// How the chord is written, as in "Shift+Alt+L".
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn chord_label(binding: &Binding) -> String {
     let key = match binding.key {
         Key::Plus | Key::Equals => "+".to_owned(),
