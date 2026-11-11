@@ -8,7 +8,6 @@
 //! yet, are listed below with the reason.
 //!
 //! Left out of the table, and why:
-//! - F4 (Navigation bar): no navigation bar yet (roadmap phase 2).
 //! - Home / End (First / last page): PdfCraft's view keys already do this.
 //! - Alt+Left / Alt+Right (Previous / next view): PdfCraft's view keys already do this.
 //! - Shift+Alt+P (Perimeter): no closed-perimeter tool yet (roadmap phase 8a).
@@ -52,8 +51,6 @@ impl Mods {
         (ctrl, m.shift, m.alt) == want && (ctrl || !m.ctrl)
     }
 
-    // Read by the tests today; a shortcuts list will show it.
-    #[cfg_attr(not(test), allow(dead_code))]
     fn label(self) -> &'static str {
         match self {
             Self::None => "",
@@ -98,6 +95,7 @@ pub(crate) enum Action {
     Tab(Tab),
     Markups,
     StatusBar,
+    NavBar,
 }
 
 /// One row of the table.
@@ -153,6 +151,7 @@ pub(crate) const BINDINGS: &[Binding] = &[
     b(Mods::Alt, Key::P, Action::Tab(Tab::Properties), "Properties"),
     b(Mods::Alt, Key::X, Action::Tab(Tab::ToolChest), "Tool library"),
     b(Mods::Alt, Key::Y, Action::Tab(Tab::Layers), "Layers"),
+    b(Mods::None, Key::F4, Action::NavBar, "Navigation bar"),
     b(Mods::None, Key::F8, Action::StatusBar, "Status bar"),
     // Measuring.
     b(Mods::ShiftAlt, Key::L, Action::Command("measure.distance"), "Length"),
@@ -177,7 +176,6 @@ pub(crate) const BINDINGS: &[Binding] = &[
 ];
 
 /// How the chord is written, as in "Shift+Alt+L".
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn chord_label(binding: &Binding) -> String {
     let key = match binding.key {
         Key::Plus | Key::Equals => "+".to_owned(),
@@ -266,6 +264,7 @@ pub(crate) fn run(app: &mut PdfCraftApp, action: Action) {
         }
         Action::Markups => app.buildcraft.hidden.markups = !app.buildcraft.hidden.markups,
         Action::StatusBar => app.buildcraft.hidden.status_bar = !app.buildcraft.hidden.status_bar,
+        Action::NavBar => app.buildcraft.hidden.nav_bar = !app.buildcraft.hidden.nav_bar,
         Action::SplitRight => app.split_tab(index, false),
         Action::SplitDown => app.split_tab(index, true),
         Action::Unsplit => {
@@ -341,6 +340,7 @@ mod tests {
         assert_eq!(find("Pan").as_deref(), Some("Shift+V"));
         assert_eq!(find("Previous page").as_deref(), Some("Ctrl+Left"));
         assert_eq!(find("Rectangle").as_deref(), Some("R"));
+        assert_eq!(find("Navigation bar").as_deref(), Some("F4"));
     }
 
     #[test]

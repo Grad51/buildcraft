@@ -180,7 +180,7 @@ new file `crates/ui-egui/src/buildcraft/navigation.rs`; one hook is upstream.
 In Takeoff a table of chords (Appendix A of `docs/buildcraft/ARCHITECTURE.md`) is read before
 PdfCraft's own keys: bare letters pick markup tools (H is Highlight), Shift+Alt letters measure,
 Ctrl+0/8/9 size the page, Ctrl+2/H/I and Ctrl+Shift+2 split and unsplit, Alt letters show and hide
-panels, F8 the status bar. The table, and the list of guide rows left out with the reason for
+panels, F4 the navigation bar, F8 the status bar. The table, and the list of guide rows left out with the reason for
 each, is the new file `crates/ui-egui/src/buildcraft/keymap.rs`; one hook is upstream. The
 right-hand panel's first tab is labelled "Tool Library".
 
@@ -188,6 +188,36 @@ right-hand panel's first tab is labelled "Tool Library".
 |---|---|
 | `crates/ui-egui/src/app/keys.rs` | `shortcuts` calls `buildcraft::keymap::keys` before `registry_shortcuts` |
 
+## Navigation bar (roadmap phase 2)
+
+In Takeoff a slim bar directly under the drawing, as wide as the drawing: Split right, Split down
+and Unsplit; the Select, Pan and Zoom tools; First, Previous, a page field (a number or a page
+label, then Enter), Next and Last; Previous view and Next view; the page's size in inches and its
+drawing scale ("Scale not set" until one is set; clicking it opens the drawing-scale controls, as
+the status bar's does). Every control acts on the active pane. F4 hides and shows it. The bar is
+the new file `crates/ui-egui/src/buildcraft/nav_bar.rs` (tests: `crates/ui-egui/tests/it/nav_bar.rs`).
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app.rs` | `buildcraft::nav_bar::show` is drawn directly after `buildcraft::side::show`, inside upstream's `if !hidden.window_ui` |
+| `crates/ui-egui/tests/it/main.rs` | `mod nav_bar;` |
+
+## Panel access bars (roadmap phase 5a)
+
+In Takeoff a narrow icon strip on each edge of the window. The left strip shows BuildCraft's panel
+(now on the left, with a heading in place of its tab buttons; the measuring tab is
+"Measurements") on its Tool Library, Properties, Measurements or Layers tab; the right strip
+opens PdfCraft's Thumbnails, Bookmarks, Search, Comments, Attachments and Signatures panels and
+replaces PdfCraft's rail there. The lit icon is the panel showing; clicking it closes the panel.
+Both strips act through the Alt chords' code (`keymap::run`). The strips are drawn inside the
+status bar and Markups list rows. The strips are the new file
+`crates/ui-egui/src/buildcraft/panel_bars.rs` (tests: `crates/ui-egui/tests/it/panel_bars.rs`).
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/panels/side_panels.rs` | `show` draws `buildcraft::panel_bars::right` instead of `chrome::right_rail` in `Mode::Takeoff` |
+| `crates/ui-egui/src/app.rs` | `buildcraft::panel_bars::left` is drawn directly before `side_panels::show`, inside upstream's `if !hidden.window_ui` |
+| `crates/ui-egui/tests/it/main.rs` | `mod panel_bars;` |
 ## Licence manifest
 
 | File | Change |
