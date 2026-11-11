@@ -9,6 +9,6 @@ Status: updated Nov 10, 2026. Phases are those of `ARCHITECTURE.md` §7.
 | 2 Navigation bar | Done, not yet reviewed | `buildcraft/nav_bar.rs`, on branch `feat/nav-bar`; work order `work-orders/phase-2-nav-bar.md`. Tests in `tests/it/nav_bar.rs`. F4 hides it. The hidden state is not saved across restarts. Tooltips write the chords the Windows way (Ctrl), as the toolbar does. |
 | 3 Mouse navigation | Partly done | Wheel zoom and two-step Escape are in. Middle-drag pan, Space-drag with measure tools, double-click re-centre and the Zoom tool's Ctrl+click are not. |
 | 4 Status bar | Not started | |
-| 5 Panels | Not started | |
+| 5 Panels | Work order written for 5a | `work-orders/phase-5a-panel-bars.md`; target layout in `LAYOUT.md` |
 | 6 Split view shortcuts and Sync | Partly done | The split shortcuts are in the Phase 1 table. Sync is not started. |
 | 7 to 11 | Not started | |
