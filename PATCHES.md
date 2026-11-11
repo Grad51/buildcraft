@@ -218,6 +218,11 @@ status bar and Markups list rows. The strips are the new file
 | `crates/ui-egui/src/panels/side_panels.rs` | `show` draws `buildcraft::panel_bars::right` instead of `chrome::right_rail` in `Mode::Takeoff` |
 | `crates/ui-egui/src/app.rs` | `buildcraft::panel_bars::left` is drawn directly before `side_panels::show`, inside upstream's `if !hidden.window_ui` |
 | `crates/ui-egui/tests/it/main.rs` | `mod panel_bars;` |
+## Licence manifest
+
+| File | Change |
+|---|---|
+| `LICENSES.toml` | `NOTICE`'s hash is the fork's `NOTICE`; the `docs/brand/LICENSE-brand.txt` document is dropped because the fork removes ArtCraft's brand files, as their terms require |
 
 ## BuildCraft-only files
 
