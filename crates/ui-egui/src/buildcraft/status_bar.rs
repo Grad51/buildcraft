@@ -27,6 +27,12 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
 /// The drawing scale of `page` at its centre, as the title block would write it, or a note that
 /// the page has none.
 pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
+    Some(scale_ratio(app, index)?.unwrap_or_else(|| tl!("No scale set").to_owned()))
+}
+
+/// The drawing scale of tab `index`'s current page at its centre, as the title block would write
+/// it: `None` without a page, `Some(None)` when the page sets no scale.
+pub(crate) fn scale_ratio(app: &PdfCraftApp, index: usize) -> Option<Option<String>> {
     let view = app.views.get(index)?;
     let doc = app.session.get(view.id)?;
     let page = view.current;
@@ -35,7 +41,12 @@ pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
     let units = app.units;
     let scale = doc.measurement_scale_or(page, centre, units.per_point(), units.label()).ok()?;
     // A scale the document doesn't set is true size, written "1 pt = …" by the engine.
-    Some(if scale.ratio.starts_with("1 pt = ") { tl!("No scale set").to_owned() } else { scale.ratio })
+    Some((!scale.ratio.starts_with("1 pt = ")).then_some(scale.ratio))
+}
+
+/// What clicking the scale does (here and in the navigation bar): opens the drawing-scale controls.
+pub(crate) fn open_scale(app: &mut PdfCraftApp) {
+    app.run_command("measure.scale");
 }
 
 /// Draws the bar. It belongs to the Takeoff workspace, so it shows there when a document is open.
@@ -95,7 +106,7 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             });
         });
     if open_scale {
-        app.run_command("measure.scale");
+        self::open_scale(app);
     }
 }
 

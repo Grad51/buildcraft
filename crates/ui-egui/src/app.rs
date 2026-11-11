@@ -899,6 +899,7 @@ impl PdfCraftApp {
             crate::buildcraft::markups::show(self, ui);
             side_panels::show(self, ui);
             crate::buildcraft::side::show(self, ui);
+            crate::buildcraft::nav_bar::show(self, ui);
         }
         let t = theme::Tokens::get(&ctx);
         egui::CentralPanel::default().frame(egui::Frame::NONE.fill(t.pasteboard)).show(ui, |ui| {

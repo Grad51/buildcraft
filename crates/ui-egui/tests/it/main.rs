@@ -54,6 +54,7 @@ mod links;
 mod marks;
 mod markups;
 mod min_window;
+mod nav_bar;
 mod object_selection;
 mod ocr;
 mod open_action;
