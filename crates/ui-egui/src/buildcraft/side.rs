@@ -1,4 +1,4 @@
-//! The Takeoff workspace's right-hand panel: Tool Chest, Properties, Measure and Layers tabs.
+//! The Takeoff workspace's right-hand panel: Tool Library, Properties, Measure and Layers tabs.
 use crate::{Mode, PdfCraftApp, measure_ui, theme, widgets};
 use egui::RichText;
 
@@ -19,7 +19,7 @@ impl Tab {
 
     pub fn label(self) -> &'static str {
         match self {
-            Self::ToolChest => "Tool Chest",
+            Self::ToolChest => "Tool Library",
             Self::Properties => "Properties",
             Self::Measure => "Measure",
             Self::Layers => "Layers",
@@ -31,7 +31,7 @@ impl Tab {
 /// open; drawn after PdfCraft's side panels, so it sits beside the page.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     super::tool_chest::track(app);
-    if app.mode != Mode::Takeoff || app.active.is_none() {
+    if app.mode != Mode::Takeoff || app.active.is_none() || app.buildcraft.hidden.side {
         return;
     }
     let t = theme::Tokens::get(ui.ctx());

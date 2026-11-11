@@ -95,7 +95,7 @@ enum Action {
 /// open; drawn after the status bar so it sits just above it.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let Some(index) = app.active else { return };
-    if app.mode != Mode::Takeoff {
+    if app.mode != Mode::Takeoff || app.buildcraft.hidden.markups {
         return;
     }
     let Some(view) = app.views.get_mut(index) else { return };
@@ -144,7 +144,7 @@ fn body(ui: &mut egui::Ui, state: &mut MarkupsView, t: &theme::Tokens) -> Option
         ui.add_space(8.0);
         ui.label(tl!("Group by"));
         let combo =
-            egui::ComboBox::from_id_salt("buildcraft-markups-group").selected_text(tl!(state.group_by.label())).width(90.0).show_ui(ui, |ui| {
+            craft_ui::ComboBox::from_id_salt("buildcraft-markups-group").selected_text(tl!(state.group_by.label())).width(90.0).show_ui(ui, |ui| {
                 for g in GroupBy::ALL {
                     ui.selectable_value(&mut state.group_by, g, tl!(g.label()));
                 }
@@ -194,7 +194,7 @@ fn body(ui: &mut egui::Ui, state: &mut MarkupsView, t: &theme::Tokens) -> Option
     }
     if rows.is_empty() {
         ui.label(
-            RichText::new(tl!("No measurements or counts yet. Pick a tool in the toolbar or the Tool Chest and click the drawing."))
+            RichText::new(tl!("No measurements or counts yet. Pick a tool in the toolbar or the Tool Library and click the drawing."))
                 .color(t.text_muted),
         );
         return action;

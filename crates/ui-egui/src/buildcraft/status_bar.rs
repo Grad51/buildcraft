@@ -19,7 +19,7 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
         QuickTool::Measure(measure_ui::Tool::Calibrate) => "Calibrate: click both ends of a dimension you know.",
         QuickTool::Hand => "Pan: drag the drawing.",
         QuickTool::MarqueeZoom => "Zoom: drag a box around the area to zoom to.",
-        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Chest.",
+        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Library.",
         _ => "",
     }
 }
@@ -27,6 +27,12 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
 /// The drawing scale of `page` at its centre, as the title block would write it, or a note that
 /// the page has none.
 pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
+    Some(scale_ratio(app, index)?.unwrap_or_else(|| tl!("No scale set").to_owned()))
+}
+
+/// The drawing scale of tab `index`'s current page at its centre, as the title block would write
+/// it: `None` without a page, `Some(None)` when the page sets no scale.
+pub(crate) fn scale_ratio(app: &PdfCraftApp, index: usize) -> Option<Option<String>> {
     let view = app.views.get(index)?;
     let doc = app.session.get(view.id)?;
     let page = view.current;
@@ -35,13 +41,18 @@ pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
     let units = app.units;
     let scale = doc.measurement_scale_or(page, centre, units.per_point(), units.label()).ok()?;
     // A scale the document doesn't set is true size, written "1 pt = …" by the engine.
-    Some(if scale.ratio.starts_with("1 pt = ") { tl!("No scale set").to_owned() } else { scale.ratio })
+    Some((!scale.ratio.starts_with("1 pt = ")).then_some(scale.ratio))
+}
+
+/// What clicking the scale does (here and in the navigation bar): opens the drawing-scale controls.
+pub(crate) fn open_scale(app: &mut PdfCraftApp) {
+    app.run_command("measure.scale");
 }
 
 /// Draws the bar. It belongs to the Takeoff workspace, so it shows there when a document is open.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let Some(index) = app.active else { return };
-    if app.mode != Mode::Takeoff || app.views.get(index).is_none() {
+    if app.mode != Mode::Takeoff || app.views.get(index).is_none() || app.buildcraft.hidden.status_bar {
         return;
     }
     let t = theme::Tokens::get(ui.ctx());
@@ -58,6 +69,16 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 let small = |s: &str| RichText::new(s).font(theme::regular(11.5)).color(t.text_muted);
                 ui.label(small(tl!(hint)));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    let wheel = &mut app.buildcraft.wheel;
+                    if ui
+                        .selectable_label(false, RichText::new(tl!(wheel.label())).font(theme::regular(11.5)))
+                        .on_hover_text(tl!(
+                            "Switch the mouse wheel between zooming at the pointer and scrolling. Ctrl with the wheel does the other."
+                        ))
+                        .clicked()
+                    {
+                        *wheel = wheel.toggled();
+                    }
                     let Some(view) = app.views.get_mut(index) else { return };
                     ui.label(small(&format!("{:.0}%", view.zoom * 100.0))).on_hover_text(tl!("Zoom"));
                     let snap = &mut view.measure.snap_enabled;
@@ -85,7 +106,7 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
             });
         });
     if open_scale {
-        app.run_command("measure.scale");
+        self::open_scale(app);
     }
 }
 

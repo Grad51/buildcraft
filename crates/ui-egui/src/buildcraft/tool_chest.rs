@@ -1,4 +1,4 @@
-//! The Tool Chest tab: saved takeoff tools in sets (Electrical, General, the user's own), with
+//! The Tool Library tab: saved takeoff tools in sets (Electrical, General, the user's own), with
 //! Recent tools on top. Click a tool to use it once, double-click to keep using it. A tool sets
 //! the measuring tool, the item its markups are listed under, their colour, line and fill, and
 //! the breakdown new markups are tagged with. Sets are shared as `.bctools.json` files.
@@ -400,7 +400,7 @@ pub(crate) fn import_path(app: &mut PdfCraftApp, path: &std::path::Path) {
         Err(e) => app.notify(e),
         Ok(set) => match app.buildcraft.chest.add_set(set) {
             Some(_) => app.notify(tl!("Added the tool set.")),
-            None => app.notify(tl!("The Tool Chest is full; remove a set first.")),
+            None => app.notify(tl!("The Tool Library is full; remove a set first.")),
         },
     }
 }

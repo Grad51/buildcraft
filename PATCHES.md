@@ -8,7 +8,7 @@ When an upstream merge conflicts, resolve each file below by keeping upstream's 
 re-applying the change described here. `git rerere` is on in the BuildCraft clone and remembers
 resolutions it has seen.
 
-Base: PdfCraft `main` at 1dd2737b (v0.14.0), merged Oct 26, 2026.
+Base: PdfCraft `main` at 2b46f8bf (v0.18.1), merged Nov 10, 2026.
 
 ## Estimator theme
 
@@ -19,7 +19,7 @@ A fourth appearance, beside System, Light and Dark: slate-gray dark chrome, blue
 |---|---|
 | `crates/ui-egui/src/theme.rs` | `ThemeKind::Estimator` and `ThemePreference::Estimator`; the Estimator tokens; `Tokens::dark()` counts it as dark |
 | `crates/ui-egui/src/theme/tests.rs` | Readability test covers Estimator |
-| `crates/ui-egui/src/dialogs/appearance.rs` | Estimator on the Dark card and in the mode list; `card()` returns the picked theme so a card can hold more than one |
+| `crates/ui-egui/src/dialogs/appearance.rs` | `DARK_THEMES` lists Estimator and the Appearance mode list offers it (upstream's cards pick only Light or Dark since v0.18) |
 | `crates/ui-egui/src/chrome.rs` | Title-bar theme button: ruler icon, cycle System → Light → Dark → Estimator |
 | `crates/ui-egui/src/commands.rs` | `view.theme.estimator` handler |
 | `crates/ui-egui/src/menus.rs` | `view.theme.estimator` in the View menu, with its check mark |
@@ -42,12 +42,12 @@ ArtCraft marks and not present themselves as ArtCraft products.
 | `crates/ui-egui/src/home.rs` | Home card: tiger mark and BuildCraft text |
 | `crates/engine/src/links.rs`, `links/tests.rs` | Links: BuildCraft GitHub and issues first, PdfCraft GitHub and Discord as upstream |
 | `crates/engine/src/commands.rs` | Help menu labels for those links; "About BuildCraft" |
-| `crates/ui-egui/src/app.rs` | Window title "… — BuildCraft" |
+| `crates/ui-egui/src/app.rs` | Window title "… — BuildCraft" (`sync_titles`) |
 | `crates/ui-egui/src/menus.rs` | `APP_NAME` = "BuildCraft" |
 | `apps/pdfcraft/src/main.rs` | Window title "BuildCraft" |
 | `apps/pdfcraft/build.rs` | Windows exe ProductName and description |
 | `apps/pdfcraft-cli/src/main.rs` | Help text points at BuildCraft issues |
-| `crates/ui-egui/tests/it/links.rs`, `viewer.rs`, `accessibility.rs` | Tests follow the new names and links |
+| `crates/ui-egui/tests/it/links.rs`, `viewer.rs`, `accessibility.rs` | Tests follow the new names and links (every `— PdfCraft"` window title in `viewer.rs` becomes `— BuildCraft"`) |
 | `README.md` | BuildCraft header above PdfCraft's README; brand paragraphs changed |
 | `NOTICE` | BuildCraft header; brand paragraph changed |
 
@@ -100,9 +100,9 @@ status bar in it. The bar is in the new file `crates/ui-egui/src/buildcraft/stat
 | `crates/ui-egui/src/state.rs` | `Mode::Takeoff` (`takeoff`) |
 | `crates/ui-egui/src/chrome.rs` | Takeoff first in the mode bar |
 | `crates/ui-egui/src/app/commands.rs`, `panels/organize_panel.rs` | Takeoff's panel is Measure objects |
-| `crates/ui-egui/src/app.rs` | The status bar is drawn before the side panels |
+| `crates/ui-egui/src/app.rs` | The status bar is drawn before the side panels, inside upstream's `if !hidden.window_ui` |
 | `crates/ui-egui/src/lib.rs` | `mod buildcraft;` |
-| `crates/ui-egui/src/workflows/js_ui.rs` | Takeoff in Preferences' default workspace |
+| `crates/ui-egui/src/dialogs/preferences.rs` | Takeoff in Preferences' default workspace |
 | `crates/ui-egui/src/app/control.rs` | `default-mode` accepts `takeoff` |
 | `apps/pdfcraft/src/main.rs` | The app's default workspace is Takeoff (a saved preference wins); `PdfCraftApp::new()` keeps All tools so upstream tests are unchanged |
 | `crates/ui-egui/src/tools/measure_ui.rs` | Accessible names for the scale fields |
@@ -143,10 +143,10 @@ and shared as `.bctools.json` files, with Recent tools on top. The logic is in n
 |---|---|
 | `crates/measure/src/lib.rs` | `pub mod toolchest;` |
 | `crates/ui-egui/src/lib.rs` | `PdfCraftApp::buildcraft` (the Takeoff workspace's state) |
-| `crates/ui-egui/src/app.rs` | Its default; the toolbar is drawn after the mode bar and the right-hand panel after the side panels |
+| `crates/ui-egui/src/app.rs` | Its default; the toolbar is drawn after the mode bar (unless the document hides toolbars) and the right-hand panel after the side panels |
 | `crates/ui-egui/src/app/prefs.rs` | The chest is saved and restored as `buildcraft_tool_chest` |
 | `crates/ui-egui/src/panels/side_panels.rs` | No Tools pane in Takeoff (its tools are in the toolbar and tabs) |
-| `crates/ui-egui/src/canvas.rs` | No floating quick bar in Takeoff (the toolbar replaces it) |
+| `crates/ui-egui/src/canvas.rs` | No floating quick bar (upstream's hotbar) in Takeoff (the toolbar replaces it) |
 | `crates/ui-egui/src/tools/measure_ui.rs` | `MeasureView::style` (new measurements are drawn in it); `measure.*` commands show the Measure tab |
 | `crates/ui-egui/tests/it/main.rs` | `mod tool_chest;` |
 
@@ -162,6 +162,45 @@ updates opens BuildCraft's releases page instead. The switch and the page are in
 | `crates/ui-egui/src/platform/updates.rs` | `RELEASES_PAGE` is BuildCraft's; `check_for_updates` opens it and `poll_updates` returns early while `UPSTREAM_UPDATER` is off |
 | `parity/acrobat-features.toml` | `view.check-for-updates` evidence and notes follow the new tests |
 | `crates/ui-egui/tests/it/updates.rs` | Rewritten: the command opens BuildCraft's releases page, and neither it nor the check at start asks PdfCraft's feed |
+| `crates/ui-egui/tests/it/comments.rs` | The two tests that wait for PdfCraft's update prompt (`keys_under_the_update_prompt_…`, `edit_delete_from_a_native_menu_under_the_update_prompt_…`) are `#[ignore]`d: the prompt never shows here |
+
+## Mouse navigation (Bluebeam-style)
+
+In Takeoff the mouse wheel zooms at the pointer over the drawing (Ctrl-wheel scrolls; a status-bar
+switch puts it back), and Escape goes back to Select once nothing is half drawn. The code is in the
+new file `crates/ui-egui/src/buildcraft/navigation.rs`; one hook is upstream.
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app/frame.rs` | `prepare_raw_input` calls `buildcraft::navigation::raw_input` before the wheel speed is applied |
+| `crates/ui-egui/src/app/prefs.rs` | The wheel setting is saved and restored as `buildcraft_wheel` |
+
+## Keyboard shortcuts (Bluebeam-style)
+
+In Takeoff a table of chords (Appendix A of `docs/buildcraft/ARCHITECTURE.md`) is read before
+PdfCraft's own keys: bare letters pick markup tools (H is Highlight), Shift+Alt letters measure,
+Ctrl+0/8/9 size the page, Ctrl+2/H/I and Ctrl+Shift+2 split and unsplit, Alt letters show and hide
+panels, F4 the navigation bar, F8 the status bar. The table, and the list of guide rows left out with the reason for
+each, is the new file `crates/ui-egui/src/buildcraft/keymap.rs`; one hook is upstream. The
+right-hand panel's first tab is labelled "Tool Library".
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app/keys.rs` | `shortcuts` calls `buildcraft::keymap::keys` before `registry_shortcuts` |
+
+## Navigation bar (roadmap phase 2)
+
+In Takeoff a slim bar directly under the drawing, as wide as the drawing: Split right, Split down
+and Unsplit; the Select, Pan and Zoom tools; First, Previous, a page field (a number or a page
+label, then Enter), Next and Last; Previous view and Next view; the page's size in inches and its
+drawing scale ("Scale not set" until one is set; clicking it opens the drawing-scale controls, as
+the status bar's does). Every control acts on the active pane. F4 hides and shows it. The bar is
+the new file `crates/ui-egui/src/buildcraft/nav_bar.rs` (tests: `crates/ui-egui/tests/it/nav_bar.rs`).
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app.rs` | `buildcraft::nav_bar::show` is drawn directly after `buildcraft::side::show`, inside upstream's `if !hidden.window_ui` |
+| `crates/ui-egui/tests/it/main.rs` | `mod nav_bar;` |
 
 ## BuildCraft-only files
 
