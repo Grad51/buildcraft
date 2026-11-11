@@ -5548,6 +5548,7 @@ fn selected_square_under_the_update_prompt() -> Harness<'static, PdfCraftApp> {
 /// The update prompt is over the window, in full screen too: Delete under it leaves the selected
 /// comment, and the Escape that closes it (Later) leaves it selected. Both acted on the comment.
 #[test]
+#[ignore = "BuildCraft never shows PdfCraft's update prompt (PATCHES.md, Updates)"]
 fn keys_under_the_update_prompt_leave_the_selected_comment() {
     for full_screen in [false, true] {
         let mut h = selected_square_under_the_update_prompt();
@@ -5571,6 +5572,7 @@ fn keys_under_the_update_prompt_leave_the_selected_comment() {
 /// The update prompt leaves the menus on, but covers the pages as a dialog does: Edit ▸ Delete from
 /// a native menu under it leaves the selected comment, which the prompt hides.
 #[test]
+#[ignore = "BuildCraft never shows PdfCraft's update prompt (PATCHES.md, Updates)"]
 fn edit_delete_from_a_native_menu_under_the_update_prompt_leaves_the_comment() {
     let mut h = selected_square_under_the_update_prompt();
     let ctx = h.ctx.clone();

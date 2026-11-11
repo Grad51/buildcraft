@@ -162,6 +162,7 @@ updates opens BuildCraft's releases page instead. The switch and the page are in
 | `crates/ui-egui/src/platform/updates.rs` | `RELEASES_PAGE` is BuildCraft's; `check_for_updates` opens it and `poll_updates` returns early while `UPSTREAM_UPDATER` is off |
 | `parity/acrobat-features.toml` | `view.check-for-updates` evidence and notes follow the new tests |
 | `crates/ui-egui/tests/it/updates.rs` | Rewritten: the command opens BuildCraft's releases page, and neither it nor the check at start asks PdfCraft's feed |
+| `crates/ui-egui/tests/it/comments.rs` | The two tests that wait for PdfCraft's update prompt (`keys_under_the_update_prompt_…`, `edit_delete_from_a_native_menu_under_the_update_prompt_…`) are `#[ignore]`d: the prompt never shows here |
 
 ## Mouse navigation (Bluebeam-style)
 
