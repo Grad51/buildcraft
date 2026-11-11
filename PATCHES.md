@@ -188,6 +188,12 @@ right-hand panel's first tab is labelled "Tool Library".
 |---|---|
 | `crates/ui-egui/src/app/keys.rs` | `shortcuts` calls `buildcraft::keymap::keys` before `registry_shortcuts` |
 
+## Licence manifest
+
+| File | Change |
+|---|---|
+| `LICENSES.toml` | `NOTICE`'s hash is the fork's `NOTICE`; the `docs/brand/LICENSE-brand.txt` document is dropped because the fork removes ArtCraft's brand files, as their terms require |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,
