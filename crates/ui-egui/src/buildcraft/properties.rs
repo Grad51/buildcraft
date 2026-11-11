@@ -1,4 +1,4 @@
-//! The Properties tab: edit a saved Tool Chest tool (name, type, item, colour, line, fill,
+//! The Properties tab: edit a saved Tool Library tool (name, type, item, colour, line, fill,
 //! marker size and breakdown defaults). Changes apply at once, to the tool in use too. With no
 //! tool picked it shows the page's drawing scale. Editing a selected markup comes later.
 use crate::{PdfCraftApp, theme, widgets};
@@ -21,7 +21,7 @@ pub(crate) fn panel(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &theme::Tokens)
 
 fn nothing_picked(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &theme::Tokens) {
     ui.label(
-        RichText::new(tl!("Pick a tool in the Tool Chest, or right-click one and choose Edit properties, to change it here."))
+        RichText::new(tl!("Pick a tool in the Tool Library, or right-click one and choose Edit properties, to change it here."))
             .font(theme::regular(11.5))
             .color(t.text_muted),
     );
@@ -60,7 +60,7 @@ fn form(ui: &mut egui::Ui, tool: &Tool) -> Option<Tool> {
     egui::Grid::new("buildcraft-tool-properties").num_columns(2).spacing(egui::vec2(8.0, 6.0)).show(ui, |ui| {
         changed |= text_row(ui, "Name", &mut edited.name, "");
         ui.label(tl!("Type"));
-        egui::ComboBox::from_id_salt("buildcraft-tool-kind").selected_text(tl!(edited.kind.label())).show_ui(ui, |ui| {
+        craft_ui::ComboBox::from_id_salt("buildcraft-tool-kind").selected_text(tl!(edited.kind.label())).show_ui(ui, |ui| {
             for kind in ToolKind::ALL {
                 changed |= ui.selectable_value(&mut edited.kind, kind, tl!(kind.label())).changed();
             }

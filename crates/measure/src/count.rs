@@ -65,7 +65,7 @@ pub fn add(doc: &mut Document, new: &NewCount, meta: &Meta) -> Result<usize> {
     let r = new.size / 2.0;
     let [x, y] = new.at;
     let shape = Shape::Oval { rect: [x - r, y - r, x + r, y + r] };
-    let style = Style { color: new.color, opacity: 1.0, width: 1.0, fill: Some(new.color) };
+    let style = Style { color: new.color, opacity: 1.0, width: 1.0, fill: Some(new.color), ..Style::default() };
     let index = pdfcraft_annot::add_annotation(
         doc,
         &NewAnnotation { page: new.page, shape, style, contents: item.clone(), author: new.author.clone() },
@@ -135,7 +135,7 @@ pub fn list(doc: &Document) -> Listing {
             if d.get(KEY).is_none() {
                 continue;
             }
-            let item = text(d, KEY).trim().chars().take(MAX_ITEM).collect::<String>();
+            let item = text(doc, d, KEY).trim().chars().take(MAX_ITEM).collect::<String>();
             let rect: Option<Vec<f64>> =
                 d.get(b"Rect").map(|r| doc.resolve(r)).and_then(|r| r.as_array().map(|a| a.iter().filter_map(Object::as_f64).collect()));
             let Some([x0, y0, x1, y1]) = rect.as_deref().and_then(|v| <[f64; 4]>::try_from(v).ok()) else { continue };
@@ -147,7 +147,7 @@ pub fn list(doc: &Document) -> Listing {
                 let v: Vec<f64> = c.as_array()?.iter().filter_map(Object::as_f64).collect();
                 <[f64; 3]>::try_from(v).ok().filter(|c| c.iter().all(|x| (0.0..=1.0).contains(x)))
             });
-            out.markers.push(Marker { page, index, id: text(d, b"NM"), item, at, color });
+            out.markers.push(Marker { page, index, id: text(doc, d, b"NM"), item, at, color });
         }
     }
     out.totals = totals(&out.markers);

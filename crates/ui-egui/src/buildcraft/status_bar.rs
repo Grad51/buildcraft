@@ -19,7 +19,7 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
         QuickTool::Measure(measure_ui::Tool::Calibrate) => "Calibrate: click both ends of a dimension you know.",
         QuickTool::Hand => "Pan: drag the drawing.",
         QuickTool::MarqueeZoom => "Zoom: drag a box around the area to zoom to.",
-        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Chest.",
+        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Library.",
         _ => "",
     }
 }
@@ -41,7 +41,7 @@ pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
 /// Draws the bar. It belongs to the Takeoff workspace, so it shows there when a document is open.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let Some(index) = app.active else { return };
-    if app.mode != Mode::Takeoff || app.views.get(index).is_none() {
+    if app.mode != Mode::Takeoff || app.views.get(index).is_none() || app.buildcraft.hidden.status_bar {
         return;
     }
     let t = theme::Tokens::get(ui.ctx());
@@ -58,6 +58,16 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 let small = |s: &str| RichText::new(s).font(theme::regular(11.5)).color(t.text_muted);
                 ui.label(small(tl!(hint)));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    let wheel = &mut app.buildcraft.wheel;
+                    if ui
+                        .selectable_label(false, RichText::new(tl!(wheel.label())).font(theme::regular(11.5)))
+                        .on_hover_text(tl!(
+                            "Switch the mouse wheel between zooming at the pointer and scrolling. Ctrl with the wheel does the other."
+                        ))
+                        .clicked()
+                    {
+                        *wheel = wheel.toggled();
+                    }
                     let Some(view) = app.views.get_mut(index) else { return };
                     ui.label(small(&format!("{:.0}%", view.zoom * 100.0))).on_hover_text(tl!("Zoom"));
                     let snap = &mut view.measure.snap_enabled;
