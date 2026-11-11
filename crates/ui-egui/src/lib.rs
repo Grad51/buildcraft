@@ -363,7 +363,7 @@ pub struct PdfCraftApp {
     full_screen_tool: Option<QuickTool>,
     /// Comment author, per-tool colours and widths, pin.
     pub comment_prefs: comments::CommentPrefs,
-    /// BuildCraft's Takeoff workspace: the Tool Chest and the right-hand tabs.
+    /// BuildCraft's Takeoff workspace: the Tool Library and the right-hand tabs.
     pub(crate) buildcraft: buildcraft::Workspace,
     pub(crate) hotbar: hotbar::Hotbar,
     /// Resolved colours, including the current OS theme when following the system.

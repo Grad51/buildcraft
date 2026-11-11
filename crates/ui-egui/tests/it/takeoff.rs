@@ -24,9 +24,9 @@ fn the_takeoff_tab_opens_the_measuring_panel_and_the_status_bar() {
     h.run_steps(4);
     assert_eq!(h.state().mode, Mode::Takeoff);
     assert_eq!(h.state().left, LeftPanel::Tool("measure"));
-    // Its tools are in the toolbar and the Tool Chest; measuring controls are the Measure tab.
+    // Its tools are in the toolbar and the Tool Library; measuring controls are the Measure tab.
     h.get_by_label("Measure length");
-    h.get_by_label("Tool Chest");
+    h.get_by_label("Tool Library");
     h.get_by_label_contains("Page 1 / ");
     h.get_by_label("Scale: No scale set");
     h.get_by_label_contains("Select: click a markup");
@@ -170,4 +170,54 @@ fn escape_cancels_a_half_drawn_measurement_then_goes_back_to_select() {
     h.run_steps(2);
     assert_eq!(h.state().quick_tool, pdfcraft_ui_egui::QuickTool::Select);
     h.get_by_label_contains("Select: click a markup");
+}
+
+#[test]
+fn takeoff_reads_the_keys_estimators_know() {
+    use egui::{Key, Modifiers};
+    use pdfcraft_ui_egui::QuickTool;
+    use pdfcraft_ui_egui::comments::CommentTool;
+    let mut h = harness(|app| app.set_option("default-mode", "takeoff").unwrap());
+    let press = |h: &mut Harness<'static, PdfCraftApp>, modifiers: Modifiers, key: Key| {
+        h.key_press_modifiers(modifiers, key);
+        h.run_steps(3);
+    };
+    // Bare letters pick markup tools: H is Highlight here, not the hand.
+    press(&mut h, Modifiers::NONE, Key::R);
+    assert_eq!(h.state().quick_tool, QuickTool::Comment(CommentTool::Rectangle));
+    press(&mut h, Modifiers::NONE, Key::H);
+    assert_eq!(h.state().quick_tool, QuickTool::Comment(CommentTool::Highlight));
+    press(&mut h, Modifiers::SHIFT, Key::V);
+    assert_eq!(h.state().quick_tool, QuickTool::Hand);
+    press(&mut h, Modifiers::NONE, Key::V);
+    assert_eq!(h.state().quick_tool, QuickTool::Select);
+    // Shift+Alt+L measures a length; Alt+L alone puts the Markups list away and brings it back.
+    press(&mut h, Modifiers::SHIFT | Modifiers::ALT, Key::L);
+    assert!(matches!(h.state().quick_tool, QuickTool::Measure(_)), "{:?}", h.state().quick_tool);
+    h.get_by_label_contains("Length: click the start");
+    assert!(h.query_all_by_label("Group by").next().is_some());
+    press(&mut h, Modifiers::ALT, Key::L);
+    assert!(h.query_all_by_label("Group by").next().is_none(), "Alt+L hides the Markups list");
+    assert!(matches!(h.state().quick_tool, QuickTool::Measure(_)), "and leaves the tool alone");
+    press(&mut h, Modifiers::ALT, Key::L);
+    assert!(h.query_all_by_label("Group by").next().is_some());
+    // Ctrl+2 splits the drawing in two panes, Ctrl+Shift+2 puts it back.
+    press(&mut h, Modifiers::COMMAND, Key::Num2);
+    assert!(h.state().panes.split.is_some_and(|s| !s.down));
+    press(&mut h, Modifiers::COMMAND, Key::I);
+    assert!(h.state().panes.split.is_some_and(|s| s.down), "Ctrl+I turns the split");
+    press(&mut h, Modifiers::COMMAND | Modifiers::SHIFT, Key::Num2);
+    assert!(h.state().panes.split.is_none());
+    // Ctrl+0 fits the width (PdfCraft's Ctrl+0 fits the page).
+    press(&mut h, Modifiers::COMMAND, Key::Num0);
+    assert_eq!(h.state().views[0].fit, pdfcraft_ui_egui::canvas::Fit::Width);
+}
+
+#[test]
+fn outside_takeoff_the_keys_keep_pdfcrafts_meanings() {
+    use pdfcraft_ui_egui::QuickTool;
+    let mut h = harness(|_| {});
+    h.key_press(egui::Key::H);
+    h.run_steps(3);
+    assert_eq!(h.state().quick_tool, QuickTool::Hand, "H is the hand outside Takeoff");
 }

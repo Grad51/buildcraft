@@ -39,6 +39,10 @@ impl PdfCraftApp {
         // full-screen and update prompts, or the OCR Verify screen in their place (a dialog has
         // returned above, and the palette holds the keyboard).
         let page_chords = !self.covers_pages();
+        // BuildCraft: Takeoff's own keys (Bluebeam's meanings) are read first.
+        if chords && page_chords {
+            crate::buildcraft::keymap::keys(self, ctx);
+        }
         if chords {
             self.registry_shortcuts(ctx);
         }

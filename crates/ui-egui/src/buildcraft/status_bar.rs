@@ -19,7 +19,7 @@ pub(crate) fn hint(tool: QuickTool) -> &'static str {
         QuickTool::Measure(measure_ui::Tool::Calibrate) => "Calibrate: click both ends of a dimension you know.",
         QuickTool::Hand => "Pan: drag the drawing.",
         QuickTool::MarqueeZoom => "Zoom: drag a box around the area to zoom to.",
-        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Chest.",
+        QuickTool::Select => "Select: click a markup to select it. Pick a takeoff tool in the toolbar or the Tool Library.",
         _ => "",
     }
 }
@@ -41,7 +41,7 @@ pub(crate) fn scale_text(app: &PdfCraftApp, index: usize) -> Option<String> {
 /// Draws the bar. It belongs to the Takeoff workspace, so it shows there when a document is open.
 pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
     let Some(index) = app.active else { return };
-    if app.mode != Mode::Takeoff || app.views.get(index).is_none() {
+    if app.mode != Mode::Takeoff || app.views.get(index).is_none() || app.buildcraft.hidden.status_bar {
         return;
     }
     let t = theme::Tokens::get(ui.ctx());

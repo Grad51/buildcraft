@@ -1,4 +1,4 @@
-//! The Properties tab: edit a saved Tool Chest tool (name, type, item, colour, line, fill,
+//! The Properties tab: edit a saved Tool Library tool (name, type, item, colour, line, fill,
 //! marker size and breakdown defaults). Changes apply at once, to the tool in use too. With no
 //! tool picked it shows the page's drawing scale. Editing a selected markup comes later.
 use crate::{PdfCraftApp, theme, widgets};
@@ -21,7 +21,7 @@ pub(crate) fn panel(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &theme::Tokens)
 
 fn nothing_picked(app: &mut PdfCraftApp, ui: &mut egui::Ui, t: &theme::Tokens) {
     ui.label(
-        RichText::new(tl!("Pick a tool in the Tool Chest, or right-click one and choose Edit properties, to change it here."))
+        RichText::new(tl!("Pick a tool in the Tool Library, or right-click one and choose Edit properties, to change it here."))
             .font(theme::regular(11.5))
             .color(t.text_muted),
     );

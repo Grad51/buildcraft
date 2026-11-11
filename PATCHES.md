@@ -174,6 +174,19 @@ new file `crates/ui-egui/src/buildcraft/navigation.rs`; one hook is upstream.
 | `crates/ui-egui/src/app/frame.rs` | `prepare_raw_input` calls `buildcraft::navigation::raw_input` before the wheel speed is applied |
 | `crates/ui-egui/src/app/prefs.rs` | The wheel setting is saved and restored as `buildcraft_wheel` |
 
+## Keyboard shortcuts (Bluebeam-style)
+
+In Takeoff a table of chords (Appendix A of `docs/buildcraft/ARCHITECTURE.md`) is read before
+PdfCraft's own keys: bare letters pick markup tools (H is Highlight), Shift+Alt letters measure,
+Ctrl+0/8/9 size the page, Ctrl+2/H/I and Ctrl+Shift+2 split and unsplit, Alt letters show and hide
+panels, F8 the status bar. The table, and the list of guide rows left out with the reason for
+each, is the new file `crates/ui-egui/src/buildcraft/keymap.rs`; one hook is upstream. The
+right-hand panel's first tab is labelled "Tool Library".
+
+| File | Change |
+|---|---|
+| `crates/ui-egui/src/app/keys.rs` | `shortcuts` calls `buildcraft::keymap::keys` before `registry_shortcuts` |
+
 ## BuildCraft-only files
 
 Not in upstream, so they never conflict: `PATCHES.md`, `Register BuildCraft.reg`,

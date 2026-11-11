@@ -76,8 +76,8 @@ pub(crate) fn show(app: &mut PdfCraftApp, ui: &mut egui::Ui) {
                 divider(ui, &t);
                 for (tool, icon, tip) in [
                     (QuickTool::Select, "mouse-pointer-2", "Select (V)"),
-                    (QuickTool::Hand, "hand", "Pan (H)"),
-                    (QuickTool::MarqueeZoom, "zoom-in", "Zoom to a box"),
+                    (QuickTool::Hand, "hand", "Pan (Shift+V)"),
+                    (QuickTool::MarqueeZoom, "zoom-in", "Zoom to a box (Z)"),
                 ] {
                     if icons::button(ui, icon, BUTTON, app.quick_tool == tool, tl!(tip)).clicked() {
                         action = Some(Action::Quick(tool));

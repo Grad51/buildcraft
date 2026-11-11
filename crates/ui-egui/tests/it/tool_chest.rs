@@ -1,4 +1,4 @@
-//! The Tool Chest (BuildCraft): saved takeoff tools in the Takeoff workspace's right-hand tabs.
+//! The Tool Library (BuildCraft): saved takeoff tools in the Takeoff workspace's right-hand tabs.
 //! A click uses a tool once, a double-click keeps it; each tool sets the item, colour and
 //! breakdown its markups are saved with.
 
@@ -72,7 +72,7 @@ fn rows(h: &Harness<'static, PdfCraftApp>) -> Vec<pdfcraft_engine::measure::take
 #[test]
 fn takeoff_has_a_toolbar_and_the_four_tabs() {
     let mut h = harness(false);
-    for name in ["Tool Chest", "Properties", "Measure", "Layers"] {
+    for name in ["Tool Library", "Properties", "Measure", "Layers"] {
         tab(&h, name);
     }
     for label in ["Select (V)", "Measure length", "Measure area", "Count items", "Cloud", "Rectangle"] {
